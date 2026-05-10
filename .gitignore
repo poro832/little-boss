@@ -1,0 +1,48 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+venv/
+env/
+.venv/
+
+# Local data (test artifacts)
+backend/local_uploads/
+backend/local_db/
+backend/CTemptest.txt
+backend/*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (in case frontend gets added later)
+node_modules/
+dist/
+build/
+.next/
+
+# Frontend (다른 팀원이 별도 관리)
+frontend2/
+
+# Misc
+*.log
+.cache/
+KakaoTalk_*.png
