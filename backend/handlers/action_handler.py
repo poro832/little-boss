@@ -1,11 +1,30 @@
 """
 STEP 4: 액션 핸들러
-분석 결과를 바탕으로 캘린더 등록, 체크리스트 저장
+분석 결과를 바탕으로 캘린더 등록, 체크리스트 저장, SNS 알림 발송
 로컬: 결과를 JSON으로 출력 (캘린더 연동은 API 키 받은 후)
-AWS:  Google Calendar API + DynamoDB 저장 (API Gateway 이벤트로 트리거)
+AWS:  Google Calendar API + DynamoDB 저장 + SNS publish
 """
+import os
 import json
 from utils.storage import get_document, save_document
+
+
+def _publish_sns(subject: str, message: str) -> bool:
+    """SNS 토픽에 알림 발송 (Lambda 프로덕션 환경에서만 동작)"""
+    topic_arn = os.getenv("SNS_TOPIC_ARN")
+    if not topic_arn or os.getenv("ENV") == "local":
+        return False
+    try:
+        import boto3
+        boto3.client("sns").publish(
+            TopicArn=topic_arn,
+            Subject=subject[:100],  # SNS 제목 100자 제한
+            Message=message
+        )
+        return True
+    except Exception as e:
+        print(f"SNS publish 실패: {e}")
+        return False
 
 
 def handle(event, context=None):
@@ -59,16 +78,32 @@ def handle_calendar(doc_id: str, user_token: str = None) -> dict:
             "description": f"긴급도: {dl['urgency']}"
         })
 
-    # TODO: Google Calendar API 연동
-    # if user_token:
-    #     from utils.calendar import create_events
-    #     created = create_events(events, user_token)
-    #     return {"success": True, "created_events": created}
+    # Google Calendar API 등록
+    created_events = []
+    if user_token and events:
+        from utils.calendar import create_events
+        created_events = create_events(events, user_token)
+
+    # SNS 알림 발송: 등록된 일정 요약
+    if events:
+        doc_type = analysis.get("document_type", "문서")
+        summary_lines = [f"- {e['date']} {e.get('time','')} : {e['title']}" for e in events[:10]]
+        success_count = sum(1 for c in created_events if c.get("status") == "created")
+        head = (
+            f"캘린더 {success_count}/{len(events)}개 등록 완료\n\n"
+            if created_events else f"등록 예정 일정 {len(events)}개:\n\n"
+        )
+        message = f"[LittleBoss] '{doc_type}' 분석 완료\n\n{head}" + "\n".join(summary_lines)
+        _publish_sns(f"LittleBoss: {doc_type} 일정 등록", message)
 
     return {
         "success": True,
-        "message": "로컬 환경: 아래 이벤트를 캘린더에 등록 예정",
+        "message": (
+            f"{len(created_events)}개 일정이 캘린더에 등록되었습니다."
+            if created_events else "user_token이 없어 등록 예정 목록만 반환합니다."
+        ),
         "events_to_register": events,
+        "created_events": created_events,
         "count": len(events)
     }
 

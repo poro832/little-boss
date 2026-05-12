@@ -10,10 +10,11 @@ from pathlib import Path
 
 ENV = os.getenv("ENV", "local")
 LOCAL_DB_PATH = Path(__file__).parent.parent / "local_db"
-LOCAL_DB_PATH.mkdir(exist_ok=True)
-# 한글 경로 문제 방지: 시스템 temp 폴더 사용
 LOCAL_UPLOADS_PATH = Path(tempfile.gettempdir()) / "littleboss_uploads"
-LOCAL_UPLOADS_PATH.mkdir(exist_ok=True)
+
+if ENV == "local":
+    LOCAL_DB_PATH.mkdir(exist_ok=True)
+    LOCAL_UPLOADS_PATH.mkdir(exist_ok=True)
 
 
 # ── 파일 저장 ──────────────────────────────────────────────
