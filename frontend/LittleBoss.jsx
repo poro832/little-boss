@@ -55,6 +55,12 @@ const validateEmail = (email) => {
   return emailRegex.test(email);
 };
 
+// ── 현재 로그인 사용자 (Google/이메일 공통) ──
+const getUser = () => ({
+  name: localStorage.getItem("user_name") || "사용자",
+  email: localStorage.getItem("user_email") || "",
+});
+
 // ── Toast ──
 function useToast() {
   const [msg, setMsg] = useState("");
@@ -183,6 +189,11 @@ function SignupPage({ onLogin, goLogin, toast }) {
       toast("약관에 동의해주세요");
       return;
     }
+    // 이메일 가입 정보 저장 (Google 가입이 아닌 경우)
+    localStorage.setItem("user_name", name);
+    localStorage.setItem("user_email", email);
+    localStorage.setItem("user_id", email);
+    localStorage.setItem(`signup_name_${email}`, name); // 이후 로그인 시 이름 복원용
     onLogin("🎉 회원가입이 완료됐어요!");
   };
 
@@ -251,6 +262,11 @@ function LoginPage({ onLogin, goSignup, goForgotPassword, toast }) {
       toast("비밀번호를 입력해주세요");
       return;
     }
+    // 이메일 로그인: 가입 시 저장한 이름 복원 (없으면 이메일 앞부분)
+    const savedName = localStorage.getItem(`signup_name_${email}`) || email.split("@")[0];
+    localStorage.setItem("user_name", savedName);
+    localStorage.setItem("user_email", email);
+    localStorage.setItem("user_id", email);
     onLogin("로그인됐어요 👋");
   };
 
@@ -389,6 +405,7 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
   const [dd, setDd] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const user = getUser();
 
   useEffect(() => {
     const saved = localStorage.getItem('profileImage');
@@ -503,10 +520,10 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
                 {profileImage ? (
                   <img src={profileImage} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                 ) : (
-                  "이"
+                  (user.name || "사")[0]
                 )}
               </div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>이가윤</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{user.name}</span>
               <span style={{ fontSize: 11, color: C.textLight }}>▾</span>
             </div>
             {dd && (
@@ -613,7 +630,7 @@ function Dashboard({ onNavTo }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
-        <div><div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>좋은 아침입니다, 이가윤님 👋</div><div style={{ fontSize: 14, color: C.textLight }}>오늘 처리해야 할 행정 문서와 일정을 확인하세요.</div></div>
+        <div><div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>좋은 아침입니다, {getUser().name}님 👋</div><div style={{ fontSize: 14, color: C.textLight }}>오늘 처리해야 할 행정 문서와 일정을 확인하세요.</div></div>
         <button style={S.btnPrimary} onClick={() => onNavTo("sub-upload")}>📎 새 문서 업로드</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
@@ -1658,6 +1675,7 @@ function Toggle({ defaultOn = false }) {
 }
 
 function ProfilePage() {
+  const user = getUser();
   const [settingsTab, setSettingsTab] = useState("profile");
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
@@ -1880,12 +1898,12 @@ function ProfilePage() {
                       }}
                     />
                   ) : (
-                    "이"
+                    (user.name || "사")[0]
                   )}
                 </div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>이가윤</div>
-                  <div style={{ fontSize: 12, color: C.textLight, marginBottom: 10 }}>컴퓨터소프트웨어과</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{user.name}</div>
+                  <div style={{ fontSize: 12, color: C.textLight, marginBottom: 10 }}>{user.email}</div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => fileInputRef.current?.click()} style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, fontWeight: 600, cursor: "pointer", background: C.purpleBg, color: C.purple, border: "none", fontFamily: "inherit" }}>사진 변경</button>
                     <button onClick={() => setProfileImage(null)} style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, fontWeight: 600, cursor: "pointer", background: "#F5F5F5", color: C.textMid, border: "none", fontFamily: "inherit" }}>삭제</button>
@@ -1898,7 +1916,7 @@ function ProfilePage() {
               {[["이름","홍길동","text"],["이메일","gaun@email.com","email"],["소속","학교 / 회사 이름 (선택)","text"]].map(([lbl,ph,tp]) => (
                 <div key={lbl} style={{ marginBottom: 16 }}>
                   <label style={S.label}>{lbl}</label>
-                  <input style={S.formInput} type={tp} defaultValue={lbl==="이메일"?"gaun@email.com":""} placeholder={ph} />
+                  <input style={S.formInput} type={tp} defaultValue={lbl==="이메일"?user.email:lbl==="이름"?user.name:""} placeholder={ph} />
                 </div>
               ))}
             </div>
@@ -1921,7 +1939,7 @@ function ProfilePage() {
               ))}
               <div style={{ marginTop: 20 }}>
                 <label style={S.label}>알림 수신 이메일</label>
-                <input style={S.formInput} type="email" defaultValue="gaun@email.com" />
+                <input style={S.formInput} type="email" defaultValue={user.email} />
               </div>
             </div>
           )}
