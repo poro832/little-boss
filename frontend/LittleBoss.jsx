@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 import logo from "./logo.svg";
-import { uploadFile, pollUntilDone, registerCalendar } from "./api";
+import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem } from "./api";
 
 
 // ── Color tokens ──
@@ -560,6 +560,29 @@ function Sidebar({ currentSub, onNavTo, sidebarOpen }) {
 
 // ── Sub pages ──
 function Dashboard({ onNavTo }) {
+  const { docs: serverDocs } = useDocuments();
+  const recentDocs = serverDocs
+    .filter(d => d.status === "done")
+    .map(d => {
+      const dd = ddayInfo(d.deadlineDate);
+      const done = d.checks.filter(c => c.done).length;
+      const allDone = d.total > 0 && done === d.total;
+      const status = allDone ? "완료" : dd.isPast ? "미완료" : "진행 중";
+      return {
+        name: d.filename || d.title,
+        date: `${d.upload}${d.deadlineDate ? ` · 마감 ${dd.text}` : ""}`,
+        status,
+        color: status === "완료" ? C.green : status === "미완료" ? C.red : C.purple,
+        bg: status === "완료" ? C.greenBg : status === "미완료" ? C.redBg : C.purpleBg,
+        title: d.title,
+        deadline: d.deadlineDate || "마감일 없음",
+        ago: dd.text,
+        done, total: d.total,
+        summary: d.summary,
+        upload: d.upload,
+        documents: d.checks.map(c => c.l),
+      };
+    });
   const [month, setMonth] = useState(3);
   const [year, setYear] = useState(2026);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -711,38 +734,10 @@ function Dashboard({ onNavTo }) {
             )}
           </div>
         </div>
-        {[
-          {
-            name: "국가장학금 신청 안내문",
-            date: "2026.03.14 · 마감 D-3",
-            status: "진행 중",
-            color: C.purple,
-            bg: C.purpleBg,
-            title: "국가장학금 신청",
-            deadline: "2026-03-22 17:00",
-            ago: "D-3",
-            done: 2,
-            total: 5,
-            summary: "정부에서 지원하는 국가 장학금 신청 프로세스입니다. 소득분위 확인 및 필수 서류 제출이 필요합니다.",
-            upload: "2026.03.14 14:23",
-            documents: ["소득분위 확인서 제출", "학교 포털 신청서 작성 완료", "주민등록등본 업로드", "가족관계증명서 제출", "재학증명서 제출"]
-          },
-          {
-            name: "졸업예비심사 신청",
-            date: "2026.03.10 · 마감 D-8",
-            status: "진행 중",
-            color: C.purple,
-            bg: C.purpleBg,
-            title: "졸업예비심사 신청",
-            deadline: "2026-03-22 18:00",
-            ago: "D-8",
-            done: 1,
-            total: 3,
-            summary: "졸업 자격 심사를 위한 졸업예비심사 신청입니다. 졸업논문 계획서와 지도교수 확인서가 필수입니다.",
-            upload: "2026.03.10 14:23",
-            documents: ["졸업논문 계획서 초안 작성", "지도교수 확인서 수령", "학교 포털 심사 신청"]
-          }
-        ].map(doc => (
+        {recentDocs.length === 0 && (
+          <div style={{ textAlign: "center", color: C.textLight, fontSize: 13, padding: "20px 0" }}>아직 분석된 문서가 없습니다.</div>
+        )}
+        {recentDocs.map(doc => (
           <div
             key={doc.name}
             onClick={() => onNavTo("doc-detail", null, doc)}
@@ -781,13 +776,10 @@ function UploadPage({ onNavTo }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [errMsg, setErrMsg] = useState("");
   const fileInputRef = useRef(null);
-  const recentFiles = [
-    { id: 1, icon: "📄", name: "국가장학금_신청안내.pdf", date: "2026.03.14", done: false, scheduleTitle: "국가장학금 신청" },
-    { id: 2, icon: "📄", name: "근로장학금_신청서.pdf", date: "2026.02.28", done: true, scheduleTitle: "근로장학금 신청" },
-    { id: 3, icon: "🖼️", name: "졸업예비심사_공지.jpg", date: "2026.02.10", done: true, scheduleTitle: "졸업예비심사 신청" },
-    { id: 4, icon: "📄", name: "복지장학금_안내문.pdf", date: "2026.01.22", done: true, scheduleTitle: null },
-    { id: 5, icon: "📝", name: "휴학신청_양식.docx", date: "2026.01.08", done: true, scheduleTitle: null },
-  ];
+  const { docs: serverDocs } = useDocuments();
+  const recentFiles = serverDocs
+    .filter(d => d.status === "done")
+    .map(d => ({ id: d.doc_id, icon: "📄", name: d.filename || d.title, date: d.upload, done: true, scheduleTitle: d.title }));
   const addFiles = async (files) => {
     const userId = localStorage.getItem("user_id") || "anonymous";
     const list = [...files];
@@ -1008,11 +1000,31 @@ function UploadPage({ onNavTo }) {
 }
 
 function SchedulePage({ onNavTo }) {
+  const { docs, loading, error } = useDocuments();
   const days = [
     [23,24,25,26,27,28,1],[2,3,4,5,6,7,8],[9,10,11,12,13,14,15],
     [16,17,18,19,20,21,22],[23,24,25,26,27,28,29],[30,31]
   ];
   const special = { 17: "incomplete", 19: "today", 22: "ongoing", 27: "completed" };
+  const MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  // 실제 문서의 마감 일정 목록 (가까운 순)
+  const scheduleList = docs
+    .filter(d => d.deadlineDate)
+    .map(d => {
+      const dd = ddayInfo(d.deadlineDate);
+      const dt = new Date(d.deadlineDate);
+      return {
+        doc_id: d.doc_id, title: d.title,
+        items: "· " + (d.checks.map(c => c.l).slice(0, 4).join(" · ") || "준비 서류 없음"),
+        day: isNaN(dt) ? "-" : dt.getDate(),
+        month: isNaN(dt) ? "" : MON[dt.getMonth()],
+        dday: dd.text, passed: dd.isPast,
+        ddayColor: dd.isPast ? C.textLight : (dd.days !== null && dd.days <= 3 ? C.red : C.purple),
+        ddayBg: dd.isPast ? C.bg : (dd.days !== null && dd.days <= 3 ? C.redBg : C.purpleBg),
+        sortKey: dd.days === null ? 99999 : dd.days,
+      };
+    })
+    .sort((a, b) => a.sortKey - b.sortKey);
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
@@ -1067,12 +1079,14 @@ function SchedulePage({ onNavTo }) {
         </div>
       </div>
       <div style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>마감 일정 목록</div>
+      {loading && <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>불러오는 중...</div>}
+      {error && <div style={{ ...S.card, color: C.red }}>⚠️ {error}</div>}
+      {!loading && !error && scheduleList.length === 0 && (
+        <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>마감 일정이 없습니다.</div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {[{ month:"MAR", day:22, title:"국가장학금 신청", items:"· 가족관계증명서 · 재학증명서 · 소득분위 확인서", dday:"D-3", ddayColor:"#EA580C", ddayBg:"#FFF7ED", passed: false },
-          { month:"MAR", day:22, title:"졸업예비심사 신청", items:"· 졸업논문 계획서 · 지도교수 확인서", dday:"D-3", ddayColor:"#EA580C", ddayBg:"#FFF7ED" },
-          { month:"MAR", day:27, title:"근로장학금 신청", items:"· 재학증명서 · 통장 사본", dday:"D-8", ddayColor: C.green, ddayBg: C.greenBg },
-        ].map(item => (
-          <div key={item.day} onClick={() => onNavTo("schedule-detail", item.day)} style={{ background: "white", borderRadius: 12, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", hover: { boxShadow: "0 4px 12px rgba(0,0,0,0.1)", transform: "translateY(-2px)" } }}>
+        {scheduleList.map(item => (
+          <div key={item.doc_id} onClick={() => onNavTo("schedule-detail", item.title)} style={{ background: "white", borderRadius: 12, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
             <div style={{ minWidth: 56, textAlign: "center", background: item.passed ? C.bg : C.purpleBg, borderRadius: 10, padding: "8px 6px" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: item.passed ? C.textLight : C.purple, letterSpacing: "0.08em" }}>{item.month}</div>
               <div style={{ fontSize: 22, fontWeight: 700, color: item.passed ? C.textLight : C.purple, lineHeight: 1 }}>{item.day}</div>
@@ -1100,56 +1114,61 @@ function CheckItem({ label, defaultChecked }) {
 }
 
 function OngoingPage({ onNavTo }) {
-  const docsInitial = [
-    { title:"국가장학금 신청", upload:"2026.03.14", deadline:"2026-03-22 17:00 · D-3", dc: C.red, db: C.redBg, scheduleDay: 22,
-      checks:[{l:"소득분위 확인서 제출"},{l:"학교 포털 신청서 작성 완료"},{l:"주민등록등본 업로드"},{l:"가족관계증명서 제출"},{l:"재학증명서 제출"}], total:5 },
-    { title:"졸업예비심사 신청", upload:"2026.03.10", deadline:"2026-03-22 18:00 · D-8", dc:"#EA580C", db:"#FFF7ED", scheduleDay: 22,
-      checks:[{l:"졸업논문 계획서 초안 작성"},{l:"지도교수 확인서 수령"},{l:"학교 포털 심사 신청"}], total:3 },
-  ];
-
-  const checkStates = Object.fromEntries(docsInitial.map(doc => {
-    const initialChecks = Array(doc.total).fill(false);
-    // 국가장학금 신청: 처음 2개 기본 선택
-    if (doc.title === "국가장학금 신청") {
-      initialChecks[0] = true;
-      initialChecks[1] = true;
-    }
-    return [doc.title, initialChecks];
-  }));
+  const { docs, loading, error } = useDocuments();
+  // 진행 중 = 분석 완료(done) & 마감 안 지남
+  const ongoing = docs.filter(d => {
+    if (d.status !== "done") return d.status !== "error"; // 처리중 문서도 표시
+    const dd = ddayInfo(d.deadlineDate);
+    return !dd.isPast;
+  });
 
   return (
     <div>
       <div style={{ marginBottom: 24 }}><div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>진행 중인 문서</div><div style={{ fontSize: 14, color: C.textLight }}>준비 중인 서류를 체크리스트로 관리하세요.</div></div>
+      {loading && <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>불러오는 중...</div>}
+      {error && <div style={{ ...S.card, color: C.red }}>⚠️ {error}</div>}
+      {!loading && !error && ongoing.length === 0 && (
+        <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>진행 중인 문서가 없습니다. 문서를 업로드해보세요.</div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {docsInitial.map(doc => {
-          const checked = checkStates[doc.title];
-          const doneCount = checked.filter(Boolean).length;
-          const percentage = (doneCount / doc.total) * 100;
+        {ongoing.map(doc => {
+          const dd = ddayInfo(doc.deadlineDate);
+          const doneCount = doc.checks.filter(c => c.done).length;
+          const percentage = doc.total ? (doneCount / doc.total) * 100 : 0;
+          const processing = doc.status !== "done";
 
           return (
-            <div key={doc.title} onClick={() => onNavTo("schedule-detail", doc.title)} style={{ ...S.card, cursor: "pointer" }}>
+            <div key={doc.doc_id} onClick={() => onNavTo("schedule-detail", doc.title)} style={{ ...S.card, cursor: "pointer" }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: C.text }}>{doc.title}</div>
-                  <div style={{ fontSize: 12, color: C.textLight }}>📎 업로드: {doc.upload} · 분석 완료</div>
+                  <div style={{ fontSize: 12, color: C.textLight }}>📎 업로드: {doc.upload} · {processing ? "분석 중..." : "분석 완료"}</div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 20, background: doc.db, color: doc.dc }}>마감 {doc.deadline}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 20, background: dd.days !== null && dd.days <= 3 ? C.redBg : C.purpleBg, color: dd.days !== null && dd.days <= 3 ? C.red : C.purple }}>
+                    {doc.deadlineDate ? `마감 ${doc.deadlineDate} · ${dd.text}` : "마감일 없음"}
+                  </span>
                   <span style={{ fontSize: 20, color: C.textLight, fontWeight: 300 }}>›</span>
                 </div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 7, marginTop: 12 }}>
-                {doc.checks.map((c, idx) => (
-                  <div key={c.l} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: C.textMid }}>
-                    <input type="checkbox" checked={checked[idx]} disabled style={{ accentColor: C.purple, width: 15, height: 15, cursor: "not-allowed", opacity: 0.6 }} />
-                    <span>{c.l}</span>
+              {processing ? (
+                <div style={{ fontSize: 13, color: C.purple, padding: "8px 0" }}>🤖 AI 분석이 진행 중입니다...</div>
+              ) : (
+                <>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 7, marginTop: 12 }}>
+                    {doc.checks.map((c, idx) => (
+                      <div key={idx} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: C.textMid }}>
+                        <input type="checkbox" checked={c.done} disabled style={{ accentColor: C.purple, width: 15, height: 15, cursor: "not-allowed", opacity: 0.6 }} />
+                        <span>{c.l}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div style={{ height: 5, background: "#EDE9FF", borderRadius: 3, marginTop: 14 }}><div style={{ height: "100%", borderRadius: 3, background: C.purple, width: percentage+"%" }} /></div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textLight, marginTop: 5 }}>
-                <span>서류 준비 현황</span><span style={{ color: C.purple, fontWeight: 600 }}>{doneCount} / {doc.total} 완료</span>
-              </div>
+                  <div style={{ height: 5, background: "#EDE9FF", borderRadius: 3, marginTop: 14 }}><div style={{ height: "100%", borderRadius: 3, background: C.purple, width: percentage+"%" }} /></div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textLight, marginTop: 5 }}>
+                    <span>서류 준비 현황</span><span style={{ color: C.purple, fontWeight: 600 }}>{doneCount} / {doc.total} 완료</span>
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
@@ -1159,35 +1178,27 @@ function OngoingPage({ onNavTo }) {
 }
 
 function ExpiredPage({ onNavTo }) {
-  const docsInitial = [
-    { ago:"19일 전", title:"근로장학금 신청", upload:"2026.02.20", deadline:"2026.02.28", done:5, total:5, checks:[{l:"재학증명서 제출"},{l:"통장 사본 제출"}] },
-    { ago:"37일 전", title:"복지장학금 신청", upload:"2026.02.01", deadline:"2026.02.10", done:3, total:5, checks:[{l:"가계소득 증명서"},{l:"부채 증명서"}] },
-    { ago:"70일 전", title:"휴학 신청", upload:"2026.01.05", deadline:"2026.01.08", done:3, total:3, checks:[{l:"휴학 신청서 제출"},{l:"학생증 사본 제출"}] },
-  ];
-
-  const [docs, setDocs] = useState(docsInitial);
-  const [checkStates, setCheckStates] = useState(
-    Object.fromEntries(docsInitial.map(doc => [doc.title, Array(doc.checks.length).fill(doc.done === doc.total)]))
-  );
+  const { docs: allDocs, loading, error } = useDocuments();
+  const [hidden, setHidden] = useState([]); // 화면에서 숨긴 doc_id (삭제 API 없음)
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
-  const toggleCheck = (docTitle, idx) => {
-    setCheckStates(prev => ({
-      ...prev,
-      [docTitle]: prev[docTitle].map((val, i) => i === idx ? !val : val)
-    }));
-  };
+  // 마감 지난 문서만
+  const docs = allDocs.filter(d => {
+    if (hidden.includes(d.doc_id)) return false;
+    const dd = ddayInfo(d.deadlineDate);
+    return dd.isPast;
+  });
 
-  const handleDeleteClick = (docTitle) => {
-    setDeleteTarget(docTitle);
+  const handleDeleteClick = (docId) => {
+    setDeleteTarget(docId);
     setShowDeleteConfirm(true);
   };
 
   const handleDeleteConfirm = () => {
     setShowDeleteConfirm(false);
-    setDocs(prev => prev.filter(doc => doc.title !== deleteTarget));
+    setHidden(prev => [...prev, deleteTarget]);
     setShowDeleteSuccess(true);
     setTimeout(() => setShowDeleteSuccess(false), 2000);
     setDeleteTarget(null);
@@ -1201,36 +1212,42 @@ function ExpiredPage({ onNavTo }) {
   return (
     <div>
       <div style={{ marginBottom: 24 }}><div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>마감된 문서</div><div style={{ fontSize: 14, color: C.textLight }}>마감이 지난 문서 목록입니다.</div></div>
+      {loading && <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>불러오는 중...</div>}
+      {error && <div style={{ ...S.card, color: C.red }}>⚠️ {error}</div>}
+      {!loading && !error && docs.length === 0 && (
+        <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>마감된 문서가 없습니다.</div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {docs.map(doc => {
-          const checked = checkStates[doc.title];
-          const doneCount = checked.filter(Boolean).length;
+          const doneCount = doc.checks.filter(c => c.done).length;
+          const totalChecks = doc.checks.length || 1;
+          const allDone = doneCount === doc.checks.length && doc.checks.length > 0;
 
           return (
-            <div key={doc.title} style={{ ...S.card, opacity: 0.85 }}>
+            <div key={doc.doc_id} style={{ ...S.card, opacity: 0.85 }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 20, background: doneCount === doc.checks.length ? "#F0FDF4" : "#FFE5E5", color: doneCount === doc.checks.length ? C.green : C.red }}>
-                  {doneCount === doc.checks.length ? '완료' : '미완료'}
+                <span style={{ fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 20, background: allDone ? "#F0FDF4" : "#FFE5E5", color: allDone ? C.green : C.red }}>
+                  {allDone ? '완료' : '미완료'}
                 </span>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <span style={{ fontSize: 11, color: C.textLight }}>{doc.deadline} 17:00</span>
-                  <button onClick={() => handleDeleteClick(doc.title)} style={{ ...S.btnOutline, fontSize: 11, padding: "5px 10px", color: C.red, borderColor: C.red }}>🗑️ 삭제</button>
+                  <span style={{ fontSize: 11, color: C.textLight }}>{doc.deadlineDate || "마감일 미상"}</span>
+                  <button onClick={() => handleDeleteClick(doc.doc_id)} style={{ ...S.btnOutline, fontSize: 11, padding: "5px 10px", color: C.red, borderColor: C.red }}>🗑️ 삭제</button>
                 </div>
               </div>
               <div style={{ fontSize: 16, fontWeight: 700, margin: "10px 0 4px" }}>{doc.title}</div>
-              <div style={{ fontSize: 12, color: C.textLight, marginBottom: 14 }}>📎 업로드: {doc.upload} · 마감: {doc.deadline}</div>
+              <div style={{ fontSize: 12, color: C.textLight, marginBottom: 14 }}>📎 업로드: {doc.upload} · 마감: {doc.deadlineDate || "-"}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                 {doc.checks.map((c, idx) => (
-                  <div key={c.l} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: C.textMid }}>
-                    <input type="checkbox" checked={checked[idx]} disabled style={{ accentColor: C.purple, width: 15, height: 15, cursor: "not-allowed", opacity: 0.7 }} />
+                  <div key={idx} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: C.textMid }}>
+                    <input type="checkbox" checked={c.done} disabled style={{ accentColor: C.purple, width: 15, height: 15, cursor: "not-allowed", opacity: 0.7 }} />
                     <span>{c.l}</span>
                   </div>
                 ))}
               </div>
-              <div style={{ height: 5, background: "#F0EEF8", borderRadius: 3, marginTop: 14 }}><div style={{ height: "100%", borderRadius: 3, background: C.purple, width: (doneCount/doc.checks.length*100)+"%" }} /></div>
+              <div style={{ height: 5, background: "#F0EEF8", borderRadius: 3, marginTop: 14 }}><div style={{ height: "100%", borderRadius: 3, background: C.purple, width: (doneCount/totalChecks*100)+"%" }} /></div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textLight, marginTop: 5 }}>
                 <span>최종 준비 완료율</span>
-                <span style={{ fontWeight: 600, color: doneCount === doc.checks.length ? C.textMid : C.red }}>{doneCount} / {doc.checks.length} · {Math.round(doneCount/doc.checks.length*100)}%</span>
+                <span style={{ fontWeight: 600, color: allDone ? C.textMid : C.red }}>{doneCount} / {doc.checks.length} · {Math.round(doneCount/totalChecks*100)}%</span>
               </div>
             </div>
           );
@@ -1242,7 +1259,7 @@ function ExpiredPage({ onNavTo }) {
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "white", borderRadius: 14, padding: 28, textAlign: "center", maxWidth: 320, boxShadow: "0 20px 48px rgba(0,0,0,0.2)" }}>
             <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>삭제하시겠습니까?</div>
-            <div style={{ fontSize: 13, color: C.textLight, marginBottom: 24 }}>{deleteTarget}을(를) 삭제합니다</div>
+            <div style={{ fontSize: 13, color: C.textLight, marginBottom: 24 }}>선택한 문서를 목록에서 삭제합니다</div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
               <button onClick={handleDeleteCancel} style={{ ...S.btnOutline, fontSize: 13 }}>아니오</button>
               <button onClick={handleDeleteConfirm} style={{ ...S.btnPrimary, fontSize: 13 }}>예</button>
