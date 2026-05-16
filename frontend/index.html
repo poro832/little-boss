@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>리틀보스 - AI 행정 비서</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --purple: #6B4FE8;
+    --purple-dark: #5038C4;
+    --purple-light: #8B72F0;
+    --purple-bg: #F0ECFF;
+    --text-dark: #1A1025;
+    --text-mid: #5A4D7A;
+    --text-light: #9B90B8;
+    --white: #FFFFFF;
+    --bg: #F2F1F6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Noto Sans KR', 'DM Sans', sans-serif;
+    background: var(--white);
+    color: var(--text-dark);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 48px;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(107,79,232,0.08);
+    transition: box-shadow 0.3s;
+  }
+  nav.scrolled { box-shadow: 0 4px 32px rgba(107,79,232,0.10); }
+
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 18px; color: var(--text-dark);
+    text-decoration: none;
+  }
+  .nav-logo img {
+    width: 40px; height: 40px; border-radius: 8px;
+  }
+
+  .nav-links {
+    display: flex; gap: 36px; list-style: none;
+  }
+  .nav-links a {
+    font-size: 14px; font-weight: 500; color: var(--text-mid);
+    text-decoration: none; transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--purple); }
+
+  .nav-cta {
+    background: var(--purple); color: white;
+    padding: 10px 22px; border-radius: 10px;
+    font-size: 14px; font-weight: 600;
+    text-decoration: none; transition: background 0.2s, transform 0.2s;
+    cursor: pointer; border: none;
+  }
+  .nav-cta:hover { background: var(--purple-dark); transform: translateY(-1px); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative;
+    padding: 120px 24px 80px;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(107,79,232,0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 40% at 80% 80%, rgba(139,114,240,0.08) 0%, transparent 60%);
+  }
+
+  .blob {
+    position: absolute; border-radius: 50%; filter: blur(80px); z-index: 0;
+    animation: float 8s ease-in-out infinite;
+  }
+  .blob-1 { width: 500px; height: 500px; background: rgba(107,79,232,0.12); top: -100px; left: -100px; animation-delay: 0s; }
+  .blob-2 { width: 350px; height: 350px; background: rgba(139,114,240,0.10); bottom: 0; right: -80px; animation-delay: 3s; }
+  .blob-3 { width: 250px; height: 250px; background: rgba(107,79,232,0.08); top: 40%; left: 60%; animation-delay: 1.5s; }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(20px, -30px) scale(1.05); }
+    66% { transform: translate(-15px, 20px) scale(0.97); }
+  }
+
+  .hero-content {
+    position: relative; z-index: 1; text-align: center; max-width: 700px;
+  }
+
+  .hero-title {
+    font-size: clamp(32px, 6vw, 56px);
+    font-weight: 700;
+    margin-bottom: 20px;
+    line-height: 1.2;
+  }
+
+  .hero-subtitle {
+    font-size: 18px;
+    color: var(--text-light);
+    margin-bottom: 40px;
+    line-height: 1.6;
+  }
+
+  .hero-buttons {
+    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    background: var(--purple);
+    color: white;
+    padding: 16px 36px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s, transform 0.2s;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-primary:hover {
+    background: var(--purple-dark);
+    transform: translateY(-2px);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--purple);
+    padding: 16px 36px;
+    border: 2px solid var(--purple);
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .btn-secondary:hover {
+    background: var(--purple-bg);
+    transform: translateY(-2px);
+  }
+
+  /* ── FEATURES ── */
+  .section {
+    padding: 80px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-title {
+    font-size: 36px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 60px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+
+  .feature-card {
+    padding: 36px 28px;
+    background: var(--white);
+    border: 1px solid rgba(107,79,232,0.1);
+    border-radius: 16px;
+    transition: all 0.3s;
+  }
+  .feature-card:hover {
+    border-color: var(--purple);
+    box-shadow: 0 12px 40px rgba(107,79,232,0.15);
+    transform: translateY(-4px);
+  }
+
+  .feature-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--purple-bg);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 16px;
+  }
+
+  .feature-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-dark);
+  }
+
+  .feature-card p {
+    font-size: 14px;
+    color: var(--text-mid);
+    line-height: 1.7;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .how-section {
+    position: relative;
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 32px;
+    margin-top: 48px;
+  }
+
+  .step {
+    text-align: center;
+  }
+
+  .step-number {
+    width: 48px;
+    height: 48px;
+    background: var(--purple);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 20px;
+    margin: 0 auto 16px;
+  }
+
+  .step h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .step p {
+    font-size: 14px;
+    color: var(--text-mid);
+    line-height: 1.6;
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+    background: linear-gradient(135deg, var(--purple) 0%, #9B6FFF 100%);
+    border-radius: 24px;
+    padding: 64px 48px;
+    text-align: center;
+    margin: 0 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-section h2 {
+    font-size: clamp(24px, 4vw, 40px);
+    font-weight: 700;
+    color: white;
+    margin-bottom: 16px;
+  }
+
+  .cta-section p {
+    font-size: 16px;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 36px;
+  }
+
+  .btn-white {
+    background: white;
+    color: var(--purple);
+    padding: 14px 32px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+  }
+  .btn-white:hover {
+    background: var(--purple-bg);
+    transform: translateY(-2px);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--text-dark);
+    color: white;
+    padding: 48px 24px;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .footer-logo img {
+    width: 32px; height: 32px; border-radius: 6px;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+  .footer-links a {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover {
+    color: white;
+  }
+
+  @media (max-width: 768px) {
+    nav {
+      padding: 14px 24px;
+    }
+    .nav-links {
+      display: none;
+    }
+    .hero {
+      padding: 100px 20px 60px;
+    }
+    .hero-title {
+      font-size: 28px;
+    }
+    .hero-subtitle {
+      font-size: 16px;
+    }
+    .section {
+      padding: 60px 20px;
+    }
+    .section-title {
+      font-size: 28px;
+      margin-bottom: 40px;
+    }
+    .cta-section {
+      padding: 40px 24px;
+      margin: 0 12px;
+    }
+    .footer-content {
+      flex-direction: column;
+      gap: 16px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-logo">
+    <img src="logo.svg" alt="LittleBoss" />
+    LittleBoss
+  </a>
+  <ul class="nav-links">
+    <li><a href="#how">이용방법</a></li>
+    <li><a href="#features">주요 기능</a></li>
+  </ul>
+  <a href="app.html" class="nav-cta">시작하기 →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <div class="hero-content">
+    <h1 class="hero-title">복잡한 서류, 이제 AI가 챙겨드립니다</h1>
+    <p class="hero-subtitle">
+      리틀보스는 당신의 서류 관리 어시스턴트입니다.
+      <br>
+      장학금 신청, 졸업 서류, 모든 일정을 한 곳에서 관리하세요.
+    </p>
+    <div class="hero-buttons">
+      <a href="app.html" class="btn-primary">
+        지금 시작하기
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      </a>
+      <button class="btn-secondary" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">
+        자세히 알아보기
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section how-section" id="how">
+  <h2 class="section-title">어떻게 사용하나요?</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-number">1</div>
+      <h3>계정 만들기</h3>
+      <p>간단한 회원가입으로 시작하세요. 이메일이나 Google 계정으로 가입 가능합니다.</p>
+    </div>
+    <div class="step">
+      <div class="step-number">2</div>
+      <h3>서류 업로드</h3>
+      <p>필요한 서류를 업로드하면 AI가 자동으로 분석합니다.</p>
+    </div>
+    <div class="step">
+      <div class="step-number">3</div>
+      <h3>일정 확인</h3>
+      <p>마감일과 준비해야 할 것들을 한눈에 확인하세요.</p>
+    </div>
+    <div class="step">
+      <div class="step-number">4</div>
+      <h3>완료!</h3>
+      <p>리틀보스가 도와주니 더 이상 놓치는 것이 없습니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <h2 class="section-title">주요 기능</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📅</div>
+      <h3>스마트 일정 관리</h3>
+      <p>장학금 신청, 졸업 서류 등 모든 마감일을 자동으로 추적하고 알림을 받으세요.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <h3>AI 문서 분석</h3>
+      <p>제출하신 서류를 AI가 분석하여 부족한 부분을 미리 알려드립니다.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3>체크리스트</h3>
+      <p>각 절차별 체크리스트로 빠뜨린 것이 없는지 확인하세요.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⏰</div>
+      <h3>알림 서비스</h3>
+      <p>중요한 날짜가 다가오면 미리 알림을 받고 준비할 수 있습니다.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💾</div>
+      <h3>안전한 저장</h3>
+      <p>모든 서류와 정보는 안전하게 암호화되어 저장됩니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-content">
+    <div class="footer-logo">
+      <img src="logo.svg" alt="LittleBoss" />
+      LittleBoss
+    </div>
+    <ul class="footer-links">
+      <li><a href="#">서비스 소개</a></li>
+      <li><a href="#">이용약관</a></li>
+      <li><a href="#">개인정보처리방침</a></li>
+      <li><a href="#">문의</a></li>
+    </ul>
+    <div>© 2026 리틀보스. 서류 관리 어시스턴트.</div>
+  </div>
+</footer>
+
+<script>
+  // 스크롤 시 네비게이션 스타일 변경
+  window.addEventListener('scroll', () => {
+    const nav = document.getElementById('nav');
+    if (window.scrollY > 50) {
+      nav.classList.add('scrolled');
+    } else {
+      nav.classList.remove('scrolled');
+    }
+  });
+</script>
+
+</body>
+</html>

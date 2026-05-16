@@ -53,19 +53,53 @@ def _extract_image(file_path: str) -> str:
 
 
 def _extract_textract(s3_key: str) -> str:
-    """AWS Textract로 텍스트 추출"""
+    """AWS Textract로 텍스트 추출 (PDF는 다중 페이지 비동기, 이미지는 동기)"""
     import boto3
+    import time
+
     textract = boto3.client('textract', region_name='ap-northeast-2')
-    response = textract.analyze_document(
-        Document={'S3Object': {
-            'Bucket': os.getenv('S3_BUCKET'),
-            'Name': s3_key
-        }},
-        FeatureTypes=['TABLES', 'FORMS']
-    )
-    blocks = response['Blocks']
-    lines = [b['Text'] for b in blocks if b['BlockType'] == 'LINE']
-    text = '\n'.join(lines)
+    bucket = os.getenv('S3_BUCKET')
+
+    if s3_key.lower().endswith('.pdf'):
+        # 다중 페이지 PDF: 비동기 API
+        start = textract.start_document_text_detection(
+            DocumentLocation={'S3Object': {'Bucket': bucket, 'Name': s3_key}}
+        )
+        job_id = start['JobId']
+
+        # 완료까지 폴링 (최대 ~50초)
+        for _ in range(25):
+            time.sleep(2)
+            result = textract.get_document_text_detection(JobId=job_id)
+            status = result['JobStatus']
+            if status == 'SUCCEEDED':
+                break
+            if status == 'FAILED':
+                raise Exception(f"Textract 실패: {result.get('StatusMessage', 'Unknown')}")
+        else:
+            raise Exception("Textract 타임아웃 (페이지 너무 많음)")
+
+        # 페이지네이션 수집
+        lines = []
+        next_token = None
+        while True:
+            kwargs = {'JobId': job_id}
+            if next_token:
+                kwargs['NextToken'] = next_token
+            page = textract.get_document_text_detection(**kwargs)
+            lines.extend(b['Text'] for b in page['Blocks'] if b['BlockType'] == 'LINE')
+            next_token = page.get('NextToken')
+            if not next_token:
+                break
+        text = '\n'.join(lines)
+    else:
+        # 이미지 (단일 페이지): 동기 API
+        response = textract.detect_document_text(
+            Document={'S3Object': {'Bucket': bucket, 'Name': s3_key}}
+        )
+        lines = [b['Text'] for b in response['Blocks'] if b['BlockType'] == 'LINE']
+        text = '\n'.join(lines)
+
     if not text.strip():
         return "__IMAGE_FILE__"
     return text
