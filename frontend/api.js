@@ -92,6 +92,28 @@ export function toScreenDoc(doc) {
   };
 }
 
+// 특정 연/월의 일별 마감 이벤트 맵: { 22: { status, title, doc_id } }
+// status: completed(전체 완료) | ongoing(진행중) | incomplete(마감지남·미완)
+export function deadlinesForMonth(screenDocs, year, month1to12) {
+  const map = {};
+  (screenDocs || []).forEach((d) => {
+    if (!d.deadlineDate) return;
+    const dt = new Date(d.deadlineDate);
+    if (isNaN(dt)) return;
+    if (dt.getFullYear() !== year || dt.getMonth() + 1 !== month1to12) return;
+    const day = dt.getDate();
+    const doneAll = d.total > 0 && d.checks.filter((c) => c.done).length === d.total;
+    const past = ddayInfo(d.deadlineDate).isPast;
+    const status = doneAll ? "completed" : past ? "incomplete" : "ongoing";
+    // 같은 날 여러 건이면 진행중 > 미완 > 완료 우선
+    const rank = { ongoing: 3, incomplete: 2, completed: 1 };
+    if (!map[day] || rank[status] > rank[map[day].status]) {
+      map[day] = { status, title: d.title, doc_id: d.doc_id };
+    }
+  });
+  return map;
+}
+
 // 사용자 문서 목록 훅: { docs, loading, error, reload }
 export function useDocuments() {
   const [docs, setDocs] = useState([]);

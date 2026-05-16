@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 import logo from "./logo.svg";
-import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem } from "./api";
+import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem, deadlinesForMonth } from "./api";
 
 
 // ── Color tokens ──
@@ -643,7 +643,8 @@ function Dashboard({ onNavTo }) {
     else setMonth(month + 1);
   };
 
-  const eventDates = { 3: { 19: "sky", 22: "gray", 27: "green" } };
+  // 실제 문서 마감일 → 현재 보는 달의 일별 이벤트
+  const monthEvents = deadlinesForMonth(serverDocs, year, month);
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
   const calendarDays = [];
@@ -744,11 +745,12 @@ function Dashboard({ onNavTo }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, rowGap: 8, textAlign: "center" }}>
             {["일","월","화","수","목","금","토"].map(d => <div key={d} style={{ fontSize: 10, color: C.textLight, paddingBottom: 6 }}>{d}</div>)}
             {calendarDays.map((d, i) => {
-              const eventColor = eventDates[month]?.[d];
-              const colorMap = { red: C.red, purple: C.purple, green: C.green, gray: C.textLight, sky: "#0EA5E9" };
-              const bgColorMap = { red: C.redBg, purple: C.purpleBg, green: C.greenBg, gray: "#E5E7EB", sky: "#E0F2FE" };
+              const ev = d ? monthEvents[d] : null;
+              const colorMap = { ongoing: "#EA580C", completed: C.green, incomplete: C.textLight };
+              const bgColorMap = { ongoing: "#FFF7ED", completed: C.greenBg, incomplete: "#E5E7EB" };
+              const st = ev?.status;
               return (
-                <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: eventColor ? colorMap[eventColor] : C.textMid, fontWeight: eventColor ? 600 : 400, width: 24, height: 24, borderRadius: "50%", background: eventColor ? bgColorMap[eventColor] : "transparent", margin: "0 auto" }}>
+                <div key={i} title={ev ? ev.title : ""} onClick={() => ev && onNavTo("schedule-detail", ev.title)} style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: st ? colorMap[st] : C.textMid, fontWeight: st ? 600 : 400, width: 24, height: 24, borderRadius: "50%", background: st ? bgColorMap[st] : "transparent", margin: "0 auto", cursor: st ? "pointer" : "default" }}>
                   {d}
                 </div>
               );
@@ -1058,11 +1060,21 @@ function UploadPage({ onNavTo }) {
 
 function SchedulePage({ onNavTo }) {
   const { docs, loading, error } = useDocuments();
-  const days = [
-    [23,24,25,26,27,28,1],[2,3,4,5,6,7,8],[9,10,11,12,13,14,15],
-    [16,17,18,19,20,21,22],[23,24,25,26,27,28,29],[30,31]
-  ];
-  const special = { 17: "incomplete", 19: "today", 22: "ongoing", 27: "completed" };
+  const now = new Date();
+  const [calY, setCalY] = useState(now.getFullYear());
+  const [calM, setCalM] = useState(now.getMonth() + 1); // 1~12
+  const prevMonth = () => { if (calM === 1) { setCalM(12); setCalY(calY - 1); } else setCalM(calM - 1); };
+  const nextMonth = () => { if (calM === 12) { setCalM(1); setCalY(calY + 1); } else setCalM(calM + 1); };
+
+  // 동적 캘린더 그리드
+  const firstDow = new Date(calY, calM - 1, 1).getDay();
+  const daysInM = new Date(calY, calM, 0).getDate();
+  const grid = [];
+  for (let i = 0; i < firstDow; i++) grid.push(null);
+  for (let i = 1; i <= daysInM; i++) grid.push(i);
+
+  const monthEvents = deadlinesForMonth(docs, calY, calM);
+  const isToday = (d) => d === now.getDate() && calM === now.getMonth() + 1 && calY === now.getFullYear();
   const MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
   // 실제 문서의 마감 일정 목록 (가까운 순)
   const scheduleList = docs
@@ -1090,29 +1102,29 @@ function SchedulePage({ onNavTo }) {
       </div>
       <div style={{ ...S.card, marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <span style={{ fontSize: 18, fontWeight: 700 }}>2026년 3월</span>
+          <span style={{ fontSize: 18, fontWeight: 700 }}>{calY}년 {calM}월</span>
           <div style={{ display: "flex", gap: 6 }}>
-            {["‹","›"].map(a => <button key={a} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid #E8E4F4", background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>{a}</button>)}
+            <button onClick={prevMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid #E8E4F4", background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>‹</button>
+            <button onClick={nextMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid #E8E4F4", background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>›</button>
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, textAlign: "center" }}>
           {["일","월","화","수","목","금","토"].map(d => <div key={d} style={{ fontSize: 11, fontWeight: 600, color: C.textLight, paddingBottom: 8, letterSpacing: "0.05em" }}>{d}</div>)}
-          {days.flat().map((d, i) => {
-            const sp = special[d];
-            const isOther = (i < 6 && d > 20) || (i > 28 && d < 5);
-            const eventTitles = { 17: "국가장학금", 22: "졸업예비심사", 27: "근로장학금" };
+          {grid.map((d, i) => {
+            const ev = d ? monthEvents[d] : null;
+            const today = d && isToday(d);
             const bgColorMap = { incomplete: "#F5F5F5", ongoing: "#FFF7ED", completed: C.greenBg };
-            const colorMap = { incomplete: "#999", ongoing: "#EA580C", completed: C.green, today: "#0066CC" };
+            const colorMap = { incomplete: "#999", ongoing: "#EA580C", completed: C.green };
             return (
-              <div key={i} onClick={() => sp && sp !== "today" && onNavTo('schedule-detail', d)} style={{ minHeight: 90, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", fontSize: 13, borderRadius: 8, cursor: sp && sp !== "today" ? "pointer" : "default", padding: 8,
-                color: isOther ? "#CCC" : sp === "today" ? "#0066CC" : colorMap[sp] || C.textMid,
-                background: bgColorMap[sp] || "transparent", fontWeight: sp ? 700 : 400, position: "relative", transition: "all 0.2s", opacity: (sp && sp !== "today") ? 1 : 0.8, transform: "none" }}
-                onMouseEnter={(e) => { if (sp && sp !== "today") { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)"; }}}
+              <div key={i} onClick={() => ev && onNavTo('schedule-detail', ev.title)} style={{ minHeight: 90, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", fontSize: 13, borderRadius: 8, cursor: ev ? "pointer" : "default", padding: 8,
+                color: today ? "#0066CC" : ev ? colorMap[ev.status] : C.textMid,
+                background: ev ? bgColorMap[ev.status] : (today ? "#E0F2FE" : "transparent"), fontWeight: (ev || today) ? 700 : 400, position: "relative", transition: "all 0.2s" }}
+                onMouseEnter={(e) => { if (ev) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)"; }}}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
-                <span style={{ fontSize: 12, fontWeight: 700 }}>{d}</span>
-                {sp && sp !== "today" && (
-                  <span style={{ fontSize: 9, fontWeight: 500, color: colorMap[sp] || C.purple, marginTop: 4, lineHeight: 1.2 }}>
-                    {eventTitles[d]}
+                <span style={{ fontSize: 12, fontWeight: 700 }}>{d || ""}</span>
+                {ev && (
+                  <span style={{ fontSize: 9, fontWeight: 500, color: colorMap[ev.status], marginTop: 4, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+                    {ev.title}
                   </span>
                 )}
               </div>
