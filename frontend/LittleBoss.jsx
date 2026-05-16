@@ -429,13 +429,31 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
       window.removeEventListener('profileImageUpdated', handleProfileImageUpdated);
     };
   }, []);
-  const notificationsRaw = [
-    { id: 0, type: "highlight", title: "공지사항", message: "2026-03-19 기능 업데이트 사항", time: "방금", pinned: true },
-    { id: 1, type: "highlight", title: "졸업예비심사 신청", message: "3월 22일이 마감입니다", time: "3시간 전", pinned: true },
-    { id: 2, title: "국가장학금 신청", message: "필수 서류가 미완료 상태입니다", time: "1일 전", icon: "📄"},
-    { id: 3, title: " 근로장학금 신청", message: "신청 기간이 시작되었습니다", time: "3일 전", icon: "💼"},
-    { id: 4, title: " 문서 분석 완료", message: "업로드하신 문서 분석이 완료되었습니다", time: "1주 전", icon: "✅"}
-  ];
+  const { docs: notifDocs } = useDocuments();
+  const notificationsRaw = [];
+  let nid = 1;
+  // 마감 임박(D-7 이내, 안 지남) 문서 알림
+  notifDocs
+    .filter(d => d.status === "done" && d.deadlineDate)
+    .map(d => ({ d, dd: ddayInfo(d.deadlineDate) }))
+    .filter(({ dd }) => !dd.isPast && dd.days !== null && dd.days <= 7)
+    .sort((a, b) => a.dd.days - b.dd.days)
+    .forEach(({ d, dd }) => {
+      const incomplete = d.checks.filter(c => !c.done).length;
+      notificationsRaw.push({
+        id: nid++, type: "highlight", pinned: dd.days <= 3, icon: "📄",
+        title: d.title,
+        message: incomplete > 0 ? `마감 ${dd.text} · 미완료 서류 ${incomplete}건` : `마감 ${dd.text} · 서류 준비 완료`,
+        time: dd.text,
+      });
+    });
+  // 최근 분석 완료 문서 알림 (최대 3개)
+  notifDocs.filter(d => d.status === "done").slice(0, 3).forEach(d => {
+    notificationsRaw.push({ id: nid++, title: d.title, message: "문서 분석이 완료되었습니다", time: d.upload, icon: "✅" });
+  });
+  if (notificationsRaw.length === 0) {
+    notificationsRaw.push({ id: 0, title: "알림 없음", message: "새로운 알림이 없습니다", time: "", icon: "🔔" });
+  }
   const notifications = [...notificationsRaw.filter(n => n.pinned), ...notificationsRaw.filter(n => !n.pinned)];
   useEffect(() => {
     const h = () => { setDd(false); setNotifOpen(false); };
@@ -600,6 +618,11 @@ function Dashboard({ onNavTo }) {
         documents: d.checks.map(c => c.l),
       };
     });
+  // 마감 임박 문서: 마감 안 지난 것 중 D-day 가장 가까운 1개
+  const urgentDoc = serverDocs
+    .filter(d => d.status === "done" && d.deadlineDate && !ddayInfo(d.deadlineDate).isPast)
+    .map(d => ({ ...d, _days: ddayInfo(d.deadlineDate).days ?? 99999 }))
+    .sort((a, b) => a._days - b._days)[0] || null;
   const [month, setMonth] = useState(3);
   const [year, setYear] = useState(2026);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -635,28 +658,45 @@ function Dashboard({ onNavTo }) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         {/* Left card */}
-        <div style={{...S.card, cursor: 'pointer', transition: 'all 0.2s'}} onClick={() => onNavTo('schedule-detail', 22)} onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 12px 32px rgba(107,79,232,0.15)'} onMouseLeave={(e) => e.currentTarget.style.boxShadow = S.card.boxShadow}>
+        <div style={{...S.card, cursor: urgentDoc ? 'pointer' : 'default', transition: 'all 0.2s'}} onClick={() => urgentDoc && onNavTo('schedule-detail', urgentDoc.title)} onMouseEnter={(e) => { if (urgentDoc) e.currentTarget.style.boxShadow = '0 12px 32px rgba(107,79,232,0.15)'; }} onMouseLeave={(e) => e.currentTarget.style.boxShadow = S.card.boxShadow}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>마감 임박 문서</div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <span style={{ background: C.redBg, color: C.red, fontWeight: 700, fontSize: 15, padding: "5px 12px", borderRadius: 8 }}>D-3</span>
-            <div style={{ textAlign: "right" }}><div style={{ fontWeight: 700, fontSize: 14 }}>국가장학금 신청</div><div style={{ fontSize: 11, color: C.textLight, marginTop: 2 }}>마감 기한 | 2026-03-22 17:00</div></div>
-          </div>
-          <hr style={{ border: "none", borderTop: `1px solid ${C.purpleBorder}`, margin: "14px 0" }} />
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>미완료 서류</div>
-          {["가족관계증명서","재학증명서"].map(d => <div key={d} style={{ fontSize: 13, color: C.textMid, marginBottom: 4 }}>· {d}</div>)}
-          <hr style={{ border: "none", borderTop: `1px solid ${C.purpleBorder}`, margin: "14px 0" }} />
-          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>준비물 달성률</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <svg width="64" height="64" viewBox="0 0 64 64">
-              <circle cx="32" cy="32" r="26" fill="none" stroke="#EDE9FF" strokeWidth="6"/>
-              <circle cx="32" cy="32" r="26" fill="none" stroke={C.purple} strokeWidth="6" strokeLinecap="round" strokeDasharray="163" strokeDashoffset="40" transform="rotate(-90 32 32)"/>
-              <text x="32" y="32" textAnchor="middle" dominantBaseline="middle" fontSize="13" fontWeight="700" fill={C.purple}>75%</text>
-            </svg>
-            <div style={{ fontSize: 12, color: C.textMid, display: "flex", flexDirection: "column", gap: 5 }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: C.purple, display: "inline-block" }} />준비 완료</span>
-              <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#DDD", display: "inline-block" }} />미완료</span>
-            </div>
-          </div>
+          {!urgentDoc ? (
+            <div style={{ fontSize: 13, color: C.textLight, padding: "30px 0", textAlign: "center" }}>마감 임박 문서가 없습니다.</div>
+          ) : (() => {
+            const dd = ddayInfo(urgentDoc.deadlineDate);
+            const incomplete = urgentDoc.checks.filter(c => !c.done);
+            const doneCnt = urgentDoc.total - incomplete.length;
+            const pct = urgentDoc.total ? Math.round(doneCnt / urgentDoc.total * 100) : 0;
+            const circ = 163;
+            const offset = circ * (1 - pct / 100);
+            const urgent = dd.days !== null && dd.days <= 3;
+            return (
+              <>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={{ background: urgent ? C.redBg : C.purpleBg, color: urgent ? C.red : C.purple, fontWeight: 700, fontSize: 15, padding: "5px 12px", borderRadius: 8 }}>{dd.text}</span>
+                  <div style={{ textAlign: "right" }}><div style={{ fontWeight: 700, fontSize: 14 }}>{urgentDoc.title}</div><div style={{ fontSize: 11, color: C.textLight, marginTop: 2 }}>마감 기한 | {urgentDoc.deadlineDate}</div></div>
+                </div>
+                <hr style={{ border: "none", borderTop: `1px solid ${C.purpleBorder}`, margin: "14px 0" }} />
+                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>미완료 서류</div>
+                {incomplete.length === 0
+                  ? <div style={{ fontSize: 13, color: C.green, marginBottom: 4 }}>· 모든 서류 준비 완료 ✅</div>
+                  : incomplete.map((c, i) => <div key={i} style={{ fontSize: 13, color: C.textMid, marginBottom: 4 }}>· {c.l}</div>)}
+                <hr style={{ border: "none", borderTop: `1px solid ${C.purpleBorder}`, margin: "14px 0" }} />
+                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>준비물 달성률</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <svg width="64" height="64" viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="26" fill="none" stroke="#EDE9FF" strokeWidth="6"/>
+                    <circle cx="32" cy="32" r="26" fill="none" stroke={C.purple} strokeWidth="6" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} transform="rotate(-90 32 32)"/>
+                    <text x="32" y="32" textAnchor="middle" dominantBaseline="middle" fontSize="13" fontWeight="700" fill={C.purple}>{pct}%</text>
+                  </svg>
+                  <div style={{ fontSize: 12, color: C.textMid, display: "flex", flexDirection: "column", gap: 5 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: C.purple, display: "inline-block" }} />준비 완료 {doneCnt}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#DDD", display: "inline-block" }} />미완료 {incomplete.length}</span>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
         {/* Calendar card */}
         <div style={S.card}>
@@ -1331,19 +1371,30 @@ function ScheduleDetailPage({ day, title, prevSub, onNavTo }) {
     }
   }, [memo, checks, day, title]);
 
-  const scheduleDataByTitle = {
-    "국가장학금 신청": { title: "국가장학금 신청", deadline: "2026-03-22 17:00", dday: "D-3", summary: "정부에서 지원하는 국가 장학금 신청 프로세스입니다. 소득분위 확인 및 필수 서류 제출이 필요합니다.", documents: ["소득분위 확인서", "가족관계증명서", "재학증명서", "주민등록등본"], color: "#A91E2E", bg: "#FFE5E5" },
-    "졸업예비심사 신청": { title: "졸업예비심사 신청", deadline: "2026-03-22 18:00", dday: "D-8", summary: "졸업 자격 심사를 위한 졸업예비심사 신청입니다. 졸업논문 계획서와 지도교수 확인서가 필수입니다.", documents: ["졸업논문 계획서", "지도교수 확인서", "학교 포털 심사 신청"], color: "#EA580C", bg: "#FFF7ED" },
-    "근로장학금 신청": { title: "근로장학금 신청", deadline: "2026-03-27 23:59", dday: "D-8", summary: "학교 근로 장학금 신청입니다. 근로시간 증명서와 통장 사본이 필요합니다.", documents: ["재학증명서", "통장 사본", "신원증 사본"], color: C.green, bg: "#F0FDF4" }
-  };
+  const { docs: serverDocs, loading } = useDocuments();
+  // title로 실제 문서 매칭
+  const matched = serverDocs.find(d => d.title === title || d.filename === title);
+  const data = matched ? (() => {
+    const dd = ddayInfo(matched.deadlineDate);
+    const urgent = dd.days !== null && dd.days <= 3;
+    return {
+      title: matched.title,
+      deadline: matched.deadlineDate || "마감일 없음",
+      dday: dd.text,
+      summary: matched.summary || "요약 정보가 없습니다.",
+      documents: matched.checks.map(c => c.l),
+      color: urgent ? C.red : C.purple,
+      bg: urgent ? C.redBg : C.purpleBg,
+    };
+  })() : null;
 
-  const scheduleData = {
-    22: { title: "국가장학금 신청", deadline: "2026-03-22 17:00", dday: "D-3", summary: "정부에서 지원하는 국가 장학금 신청 프로세스입니다. 소득분위 확인 및 필수 서류 제출이 필요합니다.", documents: ["소득분위 확인서", "가족관계증명서", "재학증명서", "주민등록등본"], color: "#A91E2E", bg: "#FFE5E5" },
-    27: { title: "근로장학금 신청", deadline: "2026-03-27 23:59", dday: "D-8", summary: "학교 근로 장학금 신청입니다. 근로시간 증명서와 통장 사본이 필요합니다.", documents: ["재학증명서", "통장 사본", "신원증 사본"], color: C.green, bg: "#F0FDF4" }
-  };
-
-  const data = title ? scheduleDataByTitle[title] : scheduleData[day];
-  if (!data) return <div>일정을 찾을 수 없습니다</div>;
+  if (loading) return <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>불러오는 중...</div>;
+  if (!data) return (
+    <div>
+      <button onClick={() => onNavTo(prevSub || "sub-schedule")} style={{ ...S.btnOutline, fontSize: 12, marginBottom: 16 }}>← 돌아가기</button>
+      <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>일정을 찾을 수 없습니다.</div>
+    </div>
+  );
 
   const toggleCheck = (idx) => {
     setChecks(p => ({ ...p, [idx]: !p[idx] }));
