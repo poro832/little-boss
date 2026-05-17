@@ -84,16 +84,111 @@ const GoogleIcon = () => (
   </svg>
 );
 
+// ── 브랜드 패널용 라인 아이콘 (흰색 stroke) ──
+const IconWrap = ({ children }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
+);
+const DocIcon = () => (
+  <IconWrap><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/></IconWrap>
+);
+const CheckIcon = () => (
+  <IconWrap><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></IconWrap>
+);
+const CalIcon = () => (
+  <IconWrap><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></IconWrap>
+);
+
+// 하단 추상 흐름 일러스트: 문서 → AI → 캘린더
+const FlowIllustration = () => (
+  <svg width="100%" height="92" viewBox="0 0 360 92" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="1.6">
+    <rect x="14" y="20" width="52" height="64" rx="6" />
+    <path d="M26 38h28M26 50h28M26 62h18" strokeWidth="1.4" />
+    <path d="M78 52h36" strokeDasharray="2 5" />
+    <circle cx="148" cy="52" r="26" stroke="rgba(255,255,255,0.7)" />
+    <path d="M148 40l3.2 7.6 7.8.6-6 5 1.9 7.6-6.9-4.2-6.9 4.2 1.9-7.6-6-5 7.8-.6z" fill="rgba(255,255,255,0.85)" stroke="none" />
+    <path d="M182 52h36" strokeDasharray="2 5" />
+    <rect x="232" y="22" width="62" height="60" rx="6" stroke="rgba(255,255,255,0.7)" />
+    <path d="M232 38h62M248 22v8M278 22v8" strokeWidth="1.4" />
+    <rect x="246" y="50" width="12" height="12" rx="2" fill="rgba(255,255,255,0.85)" stroke="none" />
+    <path d="M308 52h34" strokeDasharray="2 5" />
+    <path d="M338 44l8 8-8 8" />
+  </svg>
+);
+
 // ── Auth pages ──
 function AuthLayout({ children }) {
-  return (
-    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ background: C.white, borderRadius: 20, padding: "48px 44px", width: "100%", maxWidth: 420, boxShadow: "0 8px 48px rgba(107,79,232,0.12)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 32 }}>
-          <img src={logo} alt="LittleBoss" style={{ width: 50, height: 50, borderRadius: 10 }} />
-          <span style={{ fontWeight: 700, fontSize: 18, color: C.text }}>LittleBoss</span>
+  const [narrow, setNarrow] = useState(typeof window !== "undefined" && window.innerWidth <= 900);
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth <= 900);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const brandHeader = (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 32 }}>
+      <img src={logo} alt="LittleBoss" style={{ width: 50, height: 50, borderRadius: 10 }} />
+      <span style={{ fontWeight: 700, fontSize: 18, color: C.text }}>LittleBoss</span>
+    </div>
+  );
+
+  // 좁은 화면(≤900px): 기존 단일 카드 폴백
+  if (narrow) {
+    return (
+      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ background: C.white, borderRadius: 20, padding: "48px 44px", width: "100%", maxWidth: 420, boxShadow: "0 8px 48px rgba(107,79,232,0.12)" }}>
+          {brandHeader}
+          {children}
         </div>
-        {children}
+      </div>
+    );
+  }
+
+  const Feature = ({ icon, title, desc }) => (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 20 }}>
+      <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        {icon}
+      </div>
+      <div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: "white", marginBottom: 3 }}>{title}</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.72)", lineHeight: 1.5 }}>{desc}</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex" }}>
+      {/* 좌: 브랜드 패널 */}
+      <div style={{ flex: "1 1 50%", background: `linear-gradient(150deg, ${C.purpleLight} 0%, ${C.purple} 45%, ${C.purpleDark} 100%)`, padding: "60px 56px", display: "flex", flexDirection: "column", justifyContent: "space-between", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: -90, right: -90, width: 300, height: 300, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+        <div style={{ position: "absolute", bottom: -130, left: -70, width: 340, height: 340, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
+
+        <div style={{ position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 52 }}>
+            <img src={logo} alt="LittleBoss" style={{ width: 44, height: 44, borderRadius: 10 }} />
+            <span style={{ fontWeight: 800, fontSize: 20, color: "white" }}>LittleBoss</span>
+          </div>
+          <h1 style={{ fontSize: 31, fontWeight: 800, color: "white", lineHeight: 1.38, margin: "0 0 16px" }}>
+            행정 서류,<br />AI가 대신 정리해드려요
+          </h1>
+          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.8)", lineHeight: 1.6, margin: "0 0 44px" }}>
+            공지문만 올리면 마감일 · 준비서류 · 일정을<br />자동으로 추출해 캘린더에 등록합니다.
+          </p>
+          <Feature icon={<DocIcon />} title="마감일 자동 추출" desc="문서 속 마감일을 놓치지 않게 자동 정리" />
+          <Feature icon={<CheckIcon />} title="준비서류 체크리스트" desc="필요한 서류를 한눈에, 진행률까지" />
+          <Feature icon={<CalIcon />} title="캘린더 자동 등록" desc="마감 D-7 · D-3 · D-1 리마인더까지 자동" />
+        </div>
+
+        <div style={{ position: "relative", marginTop: 36 }}>
+          <FlowIllustration />
+        </div>
+      </div>
+
+      {/* 우: 로그인/회원가입 카드 */}
+      <div style={{ flex: "1 1 50%", background: C.white, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 32px" }}>
+        <div style={{ width: "100%", maxWidth: 400 }}>
+          {brandHeader}
+          {children}
+        </div>
       </div>
     </div>
   );
