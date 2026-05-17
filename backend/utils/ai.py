@@ -110,10 +110,26 @@ def _analyze_bedrock(text: str, image_path: str = None) -> dict:
 
     if text == "__IMAGE_FILE__" and image_path:
         import base64
-        with open(image_path, "rb") as f:
-            img_b64 = base64.b64encode(f.read()).decode()
+        from utils.storage import get_file
+
+        ext = os.path.splitext(image_path)[1].lower()
+        media_map = {
+            ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+            ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp",
+        }
+        # Bedrock Claude는 PDF를 이미지 블록으로 못 받음 (jpeg/png/gif/webp만)
+        if ext not in media_map:
+            return {
+                "document_type": "분석 불가",
+                "summary": "이 문서는 텍스트가 추출되지 않는 스캔본/PDF입니다. 이미지(JPG/PNG)로 업로드하거나 텍스트가 포함된 PDF를 사용해주세요.",
+                "deadlines": [],
+                "required_documents": [],
+                "calendar_events": [],
+            }
+        file_bytes = get_file(image_path)  # 로컬/S3 공통 (S3 키 대응)
+        img_b64 = base64.b64encode(file_bytes).decode()
         content = [
-            {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": img_b64}},
+            {"type": "image", "source": {"type": "base64", "media_type": media_map[ext], "data": img_b64}},
             {"type": "text", "text": PROMPT_TEMPLATE.format(text="[첨부 이미지 참고]")}
         ]
     else:

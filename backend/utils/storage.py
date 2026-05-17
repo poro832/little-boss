@@ -44,6 +44,21 @@ def get_file(file_path: str) -> bytes:
     return obj['Body'].read()
 
 
+def put_s3_json(key: str, data: dict):
+    """S3에 작은 JSON 객체 저장 (ai-analyzer 트리거용 마커).
+    로컬에서는 동작하지 않음 (S3 이벤트가 로컬에 없으므로)."""
+    if ENV == "local":
+        return
+    import boto3
+    s3 = boto3.client('s3')
+    s3.put_object(
+        Bucket=os.getenv('S3_BUCKET'),
+        Key=key,
+        Body=json.dumps(data, ensure_ascii=False).encode("utf-8"),
+        ContentType="application/json",
+    )
+
+
 # ── 문서 데이터 저장 ───────────────────────────────────────
 
 def save_document(doc_id: str, data: dict):

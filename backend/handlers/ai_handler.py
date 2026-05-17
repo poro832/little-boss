@@ -1,23 +1,32 @@
 """
 STEP 3: AI 분석 핸들러
 추출된 텍스트를 AI로 분석하여 마감일, 준비물, 일정 추출
-AWS: DynamoDB Streams 이벤트로 트리거 (status == ocr_done 인 경우만)
+AWS: S3 ocr-results/ 이벤트로 트리거 (DynamoDB Streams 권한 우회)
+     DynamoDB Streams 이벤트도 호환 처리 (향후 권한 부여 시)
 """
 from utils.storage import get_document, save_document
 from utils.ai import analyze
 
 
 def handle(event, context=None):
-    """Lambda 진입점 — DynamoDB Streams 이벤트에서 doc_id 추출 후 처리"""
+    """Lambda 진입점 — S3 이벤트 또는 DynamoDB Streams 이벤트에서 doc_id 추출"""
     for record in event.get('Records', []):
-        if record.get('eventName') != 'MODIFY':
-            continue
-        new_image = record.get('dynamodb', {}).get('NewImage', {})
-        status = new_image.get('status', {}).get('S', '')
-        if status == 'ocr_done':
-            doc_id = new_image.get('doc_id', {}).get('S', '')
-            if doc_id:
-                process(doc_id)
+        doc_id = None
+
+        # 1) S3 이벤트 (ocr-results/{doc_id}.json) — 주 트리거
+        if record.get('eventSource') == 'aws:s3' or 's3' in record:
+            key = record['s3']['object']['key']  # ocr-results/{doc_id}.json
+            doc_id = key.split('/')[-1].rsplit('.', 1)[0]
+
+        # 2) DynamoDB Streams 이벤트 — 권한 부여 시 호환
+        elif record.get('eventName') == 'MODIFY':
+            new_image = record.get('dynamodb', {}).get('NewImage', {})
+            status = new_image.get('status', {}).get('S', '')
+            if status == 'ocr_done':
+                doc_id = new_image.get('doc_id', {}).get('S', '')
+
+        if doc_id:
+            process(doc_id)
     return {'success': True}
 
 
