@@ -1,8 +1,8 @@
 """
 STEP 3: AI 분석 핸들러
 추출된 텍스트를 AI로 분석하여 마감일, 준비물, 일정 추출
-AWS: S3 ocr-results/ 이벤트로 트리거 (DynamoDB Streams 권한 우회)
-     DynamoDB Streams 이벤트도 호환 처리 (향후 권한 부여 시)
+AWS: DynamoDB Streams 이벤트로 트리거 (status == ocr_done)
+     S3 이벤트도 방어적으로 호환 처리 (트리거 방식 변경 대비)
 """
 from utils.storage import get_document, save_document
 from utils.ai import analyze

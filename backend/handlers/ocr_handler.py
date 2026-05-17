@@ -3,7 +3,7 @@ STEP 2: OCR 핸들러
 로컬: PyMuPDF로 텍스트 추출
 AWS:  Amazon Textract 사용 (S3 ObjectCreated 이벤트로 트리거)
 """
-from utils.storage import get_document, save_document, get_file, put_s3_json
+from utils.storage import get_document, save_document
 from utils.ocr import extract_text
 
 
@@ -28,18 +28,13 @@ def process(doc_id: str) -> dict:
     save_document(doc_id, doc)
 
     try:
-        file_bytes = get_file(doc["file_path"])
-        tmp_path = doc["file_path"]
-
-        raw_text = extract_text(tmp_path, doc["filename"])
+        # Textract는 S3 키를 직접 사용 (로컬은 파일 경로) — 파일을 직접 읽지 않음
+        raw_text = extract_text(doc["file_path"], doc["filename"])
 
         doc["raw_text"] = raw_text
         doc["status"] = "ocr_done"
         save_document(doc_id, doc)
-
-        # ai-analyzer 트리거: S3 ocr-results/ 에 마커 저장
-        # (DynamoDB Streams 권한 미부여 우회 — S3 이벤트로 ai-analyzer 실행)
-        put_s3_json(f"ocr-results/{doc_id}.json", {"doc_id": doc_id, "status": "ocr_done"})
+        # status=ocr_done DynamoDB 저장 → DynamoDB Streams가 ai-analyzer 자동 트리거
 
         return {
             "success": True,

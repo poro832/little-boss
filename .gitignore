@@ -23,6 +23,11 @@ backend/local_db/
 backend/CTemptest.txt
 backend/*.zip
 
+# 테스트 산출물
+test.pdf
+test_text.pdf
+*.test.pdf
+
 # OS
 .DS_Store
 Thumbs.db

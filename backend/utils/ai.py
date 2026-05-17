@@ -62,23 +62,30 @@ def _analyze_gemini(text: str, image_path: str = None) -> dict:
     model = "gemini-2.0-flash"
 
     if image_path and text == "__IMAGE_FILE__":
-        import base64
-        with open(image_path, "rb") as f:
-            img_bytes = f.read()
-        img_b64 = base64.b64encode(img_bytes).decode()
-        prompt = PROMPT_TEMPLATE.format(text="[첨부 이미지 참고]")
+        from utils.storage import get_file
+
+        ext = os.path.splitext(image_path)[1].lower()
+        mime_map = {
+            ".pdf": "application/pdf",
+            ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+            ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp",
+            ".heic": "image/heic",
+        }
+        mime = mime_map.get(ext, "application/pdf")
+        file_bytes = get_file(image_path)  # 로컬/S3 공통 (S3 키 대응)
+        prompt = PROMPT_TEMPLATE.format(text="[첨부 문서/이미지 참고]")
         response = client.models.generate_content(
             model=model,
             contents=[
                 prompt,
-                types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg")
+                types.Part.from_bytes(data=file_bytes, mime_type=mime)
             ]
         )
     else:
         prompt = PROMPT_TEMPLATE.format(text=text)
         response = client.models.generate_content(model=model, contents=prompt)
 
-    return _parse_response(response.text)
+    return _parse_response(getattr(response, "text", None))
 
 
 def _analyze_claude(text: str) -> dict:
@@ -142,21 +149,39 @@ def _analyze_bedrock(text: str, image_path: str = None) -> dict:
     })
     response = client.invoke_model(modelId=model_id, body=body)
     result = json.loads(response["body"].read())
-    return _parse_response(result["content"][0]["text"])
-
-
-def _parse_response(raw: str) -> dict:
-    """AI 응답에서 JSON 추출"""
-    # 마크다운 코드블록 제거
-    raw = re.sub(r"```json\s*|\s*```", "", raw).strip()
     try:
-        return json.loads(raw)
+        raw = result["content"][0]["text"]
+    except (KeyError, IndexError, TypeError):
+        raw = None
+    return _parse_response(raw)
+
+
+def _parse_response(raw) -> dict:
+    """AI 응답에서 JSON 추출 (None/비정상 응답 방어)"""
+    fallback = {
+        "document_type": "알 수 없음",
+        "summary": "분석 실패 - 다시 시도해주세요",
+        "deadlines": [],
+        "required_documents": [],
+        "calendar_events": []
+    }
+    if not raw or not isinstance(raw, str):
+        return fallback
+
+    # 1차: 마크다운 코드블록 제거 후 파싱
+    cleaned = re.sub(r"```json\s*|\s*```", "", raw).strip()
+    try:
+        return json.loads(cleaned)
     except json.JSONDecodeError:
-        # JSON 파싱 실패 시 기본값 반환
-        return {
-            "document_type": "알 수 없음",
-            "summary": "분석 실패 - 다시 시도해주세요",
-            "deadlines": [],
-            "required_documents": [],
-            "calendar_events": []
-        }
+        pass
+
+    # 2차: 본문에서 첫 { ~ 마지막 } 사이 JSON 객체만 추출
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        try:
+            return json.loads(cleaned[start:end + 1])
+        except json.JSONDecodeError:
+            pass
+
+    return fallback
