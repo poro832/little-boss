@@ -47,9 +47,19 @@ def process(doc_id: str) -> dict:
 
     try:
         raw_text = doc.get("raw_text", "")
-        image_path = doc["file_path"] if raw_text == "__IMAGE_FILE__" else None
 
-        result = analyze(raw_text, image_path)
+        if raw_text == "__UNSUPPORTED__":
+            # 구 바이너리 포맷(.hwp/.doc 등) — 변환 안내
+            result = {
+                "document_type": "지원하지 않는 형식",
+                "summary": "이 파일 형식은 직접 분석할 수 없습니다. PDF, DOCX, HWPX, 이미지(JPG/PNG) 또는 텍스트 파일로 변환 후 다시 업로드해주세요.",
+                "deadlines": [],
+                "required_documents": [],
+                "calendar_events": [],
+            }
+        else:
+            image_path = doc["file_path"] if raw_text == "__IMAGE_FILE__" else None
+            result = analyze(raw_text, image_path)
 
         doc["analysis"] = result
         doc["status"] = "done"

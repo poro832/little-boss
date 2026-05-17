@@ -906,11 +906,11 @@ function UploadPage({ onNavTo }) {
             style={{ border: `2px dashed ${dragging ? C.purple : C.purpleBorder}`, borderRadius: 16, padding: "60px 40px", textAlign: "center", background: dragging ? C.purpleBg : "white", cursor: "pointer", transition: "all .2s" }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>📂</div>
             <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>여기에 파일을 드래그 & 드롭하세요</div>
-            <div style={{ fontSize: 13, color: C.textLight, lineHeight: 1.6 }}>또는 아래 버튼으로 파일을 선택하세요<br/>PDF, JPG, PNG, DOCX 지원 · 최대 20MB</div>
+            <div style={{ fontSize: 13, color: C.textLight, lineHeight: 1.6 }}>또는 아래 버튼으로 파일을 선택하세요<br/>PDF · DOCX · HWPX · 이미지 · TXT 지원 · 최대 20MB</div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 24 }}>
-              <label style={{ ...S.btnPrimary, padding: "10px 20px" }}>📁 파일 선택<input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => handleFileSelect(e.target.files)} /></label>
+              <label style={{ ...S.btnPrimary, padding: "10px 20px" }}>📁 파일 선택<input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.hwpx,.txt,.md,.csv,.jpg,.jpeg,.png,.gif,.webp,.tiff,.bmp,.heic" style={{ display: "none" }} onChange={e => handleFileSelect(e.target.files)} /></label>
             </div>
-            <div style={{ fontSize: 11, color: C.textLight, marginTop: 12 }}>지원 형식: PDF · DOCX · JPG · PNG · HWP</div>
+            <div style={{ fontSize: 11, color: C.textLight, marginTop: 12 }}>지원 형식: PDF · DOCX · HWPX · JPG · PNG · TXT (HWP/DOC 구버전은 PDF 변환 권장)</div>
           </div>
           <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
             {queue.map(f => (

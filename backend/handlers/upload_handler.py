@@ -13,8 +13,11 @@ from utils.storage import save_file, save_document, get_document, list_documents
 import dataclasses
 
 
-ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".heic"}
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+ALLOWED_EXTENSIONS = {
+    ".pdf", ".jpg", ".jpeg", ".png", ".heic", ".gif", ".webp", ".tiff", ".tif", ".bmp",
+    ".docx", ".hwpx", ".txt", ".md", ".csv", ".hwp", ".doc",
+}
+MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
 
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -99,7 +102,7 @@ def process(filename: str, file_bytes: bytes, user_id: str = "local_user") -> di
         return {"success": False, "message": f"지원하지 않는 파일 형식입니다. ({', '.join(ALLOWED_EXTENSIONS)})"}
 
     if len(file_bytes) > MAX_FILE_SIZE:
-        return {"success": False, "message": "파일 크기가 10MB를 초과합니다."}
+        return {"success": False, "message": "파일 크기가 20MB를 초과합니다."}
 
     doc = Document(filename=filename, user_id=user_id, status="uploaded")
 

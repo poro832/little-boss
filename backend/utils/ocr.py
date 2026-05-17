@@ -1,55 +1,125 @@
 """
-OCR 레이어 - 로컬(PyMuPDF) / AWS Textract 전환 가능
-ENV=local  → PyMuPDF로 PDF 텍스트 추출
-ENV=production → Amazon Textract 사용
+문서 텍스트 추출 레이어 - 다양한 형식 지원
+- PDF / 이미지(JPG·PNG·HEIC·GIF·WEBP·TIFF) : Textract(프로덕션) / PyMuPDF(로컬)
+- DOCX : python-docx 직접 추출 (OCR 불필요)
+- TXT  : 직접 디코딩
+- HWPX : zip+XML 파싱 (한글 신형식, stdlib만 사용)
+- HWP/DOC(구 바이너리) : 변환 안내 메시지
+ENV=local → 로컬 처리 / ENV=production → AWS 처리
 """
 import os
+import io
+import re
+import zipfile
 from pathlib import Path
 
 ENV = os.getenv("ENV", "local")
 
+PDF_EXT = {".pdf"}
+IMAGE_EXT = {".jpg", ".jpeg", ".png", ".heic", ".gif", ".webp", ".tiff", ".tif", ".bmp"}
+TEXT_DIRECT_EXT = {".txt", ".md", ".csv"}
+
 
 def extract_text(file_path: str, filename: str) -> str:
-    """파일에서 텍스트 추출"""
+    """파일에서 텍스트 추출 (형식별 라우팅)"""
     ext = Path(filename).suffix.lower()
 
+    # 1) 텍스트 직접 추출 형식 (OCR 불필요, 로컬·프로덕션 공통)
+    if ext == ".docx":
+        return _extract_docx(file_path)
+    if ext == ".hwpx":
+        return _extract_hwpx(file_path)
+    if ext in TEXT_DIRECT_EXT:
+        return _extract_txt(file_path)
+    if ext in {".hwp", ".doc"}:
+        # 구 바이너리 포맷: 안정적 파싱 불가 → 안내
+        return "__UNSUPPORTED__"
+
+    # 2) PDF / 이미지
     if ENV == "local":
-        return _extract_local(file_path, ext)
+        if ext in PDF_EXT:
+            return _extract_pdf_local(file_path)
+        if ext in IMAGE_EXT:
+            return "__IMAGE_FILE__"  # 로컬: AI Vision 처리
+        return "__UNSUPPORTED__"
 
-    return _extract_textract(file_path)
+    # 프로덕션
+    if ext in PDF_EXT or ext in {".png", ".jpg", ".jpeg", ".tiff", ".tif"}:
+        return _extract_textract(file_path)
+    if ext in IMAGE_EXT:
+        return "__IMAGE_FILE__"  # Textract 미지원 이미지 → AI Vision
+    return "__UNSUPPORTED__"
 
 
-def _extract_local(file_path: str, ext: str) -> str:
-    """로컬: PyMuPDF(PDF) 또는 Pillow+pytesseract(이미지)"""
-    if ext == ".pdf":
-        return _extract_pdf(file_path)
-    elif ext in [".jpg", ".jpeg", ".png", ".heic"]:
-        return _extract_image(file_path)
-    else:
-        raise ValueError(f"지원하지 않는 파일 형식: {ext}")
+def _read_bytes(file_path: str) -> bytes:
+    """로컬 경로 / S3 키 공통 바이트 읽기"""
+    from utils.storage import get_file
+    return get_file(file_path)
 
 
-def _extract_pdf(file_path: str) -> str:
+# ── 텍스트 직접 추출 ──────────────────────────────────────
+
+def _extract_docx(file_path: str) -> str:
+    try:
+        from docx import Document as Docx
+    except ImportError:
+        raise ImportError("python-docx 미설치: pip install python-docx")
+    data = _read_bytes(file_path)
+    doc = Docx(io.BytesIO(data))
+    parts = [p.text for p in doc.paragraphs if p.text.strip()]
+    # 표 안의 텍스트도 수집
+    for table in doc.tables:
+        for row in table.rows:
+            cells = [c.text.strip() for c in row.cells if c.text.strip()]
+            if cells:
+                parts.append(" | ".join(cells))
+    text = "\n".join(parts).strip()
+    return text or "__IMAGE_FILE__"
+
+
+def _extract_hwpx(file_path: str) -> str:
+    """HWPX(한글 신형식) = zip 컨테이너. Contents/section*.xml 텍스트 추출"""
+    data = _read_bytes(file_path)
+    chunks = []
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as z:
+            names = sorted(n for n in z.namelist()
+                           if re.match(r"Contents/section\d+\.xml", n))
+            for n in names:
+                xml = z.read(n).decode("utf-8", errors="ignore")
+                # <hp:t> 태그 안 텍스트 우선, 실패 시 전체 태그 제거
+                texts = re.findall(r"<hp:t>(.*?)</hp:t>", xml, re.DOTALL)
+                if texts:
+                    chunks.append(" ".join(texts))
+                else:
+                    chunks.append(re.sub(r"<[^>]+>", " ", xml))
+    except zipfile.BadZipFile:
+        return "__UNSUPPORTED__"
+    text = re.sub(r"\s+", " ", " ".join(chunks)).strip()
+    return text or "__IMAGE_FILE__"
+
+
+def _extract_txt(file_path: str) -> str:
+    data = _read_bytes(file_path)
+    for enc in ("utf-8", "cp949", "euc-kr"):
+        try:
+            return data.decode(enc).strip() or "__IMAGE_FILE__"
+        except UnicodeDecodeError:
+            continue
+    return data.decode("utf-8", errors="ignore").strip() or "__IMAGE_FILE__"
+
+
+# ── PDF / 이미지 ─────────────────────────────────────────
+
+def _extract_pdf_local(file_path: str) -> str:
     try:
         import fitz  # PyMuPDF
-        file_bytes = Path(file_path).read_bytes()
-        doc = fitz.open(stream=file_bytes, filetype="pdf")
-        text = ""
-        for page in doc:
-            text += page.get_text()
-        text = text.strip()
-        # 텍스트가 없으면 스캔 PDF → Gemini Vision으로 처리
-        if not text:
-            return "__IMAGE_FILE__"
-        return text
     except ImportError:
         raise ImportError("PyMuPDF 미설치: pip install PyMuPDF")
-
-
-def _extract_image(file_path: str) -> str:
-    # 이미지는 현재 로컬에서 Gemini Vision으로 직접 처리
-    # (pytesseract 한국어 지원이 불안정하므로)
-    return "__IMAGE_FILE__"  # ai_analyzer에서 이미지 직접 처리
+    file_bytes = Path(file_path).read_bytes()
+    doc = fitz.open(stream=file_bytes, filetype="pdf")
+    text = "".join(page.get_text() for page in doc).strip()
+    return text or "__IMAGE_FILE__"  # 텍스트 없으면 스캔 PDF → AI Vision
 
 
 def _extract_textract(s3_key: str) -> str:
@@ -61,13 +131,10 @@ def _extract_textract(s3_key: str) -> str:
     bucket = os.getenv('S3_BUCKET')
 
     if s3_key.lower().endswith('.pdf'):
-        # 다중 페이지 PDF: 비동기 API
         start = textract.start_document_text_detection(
             DocumentLocation={'S3Object': {'Bucket': bucket, 'Name': s3_key}}
         )
         job_id = start['JobId']
-
-        # 완료까지 폴링 (최대 ~50초)
         for _ in range(25):
             time.sleep(2)
             result = textract.get_document_text_detection(JobId=job_id)
@@ -79,7 +146,6 @@ def _extract_textract(s3_key: str) -> str:
         else:
             raise Exception("Textract 타임아웃 (페이지 너무 많음)")
 
-        # 페이지네이션 수집
         lines = []
         next_token = None
         while True:
@@ -93,7 +159,6 @@ def _extract_textract(s3_key: str) -> str:
                 break
         text = '\n'.join(lines)
     else:
-        # 이미지 (단일 페이지): 동기 API
         response = textract.detect_document_text(
             Document={'S3Object': {'Bucket': bucket, 'Name': s3_key}}
         )
