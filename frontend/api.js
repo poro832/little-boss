@@ -35,6 +35,12 @@ export const getChecklist = (docId) => api.get(`/checklist/${docId}`);
 export const updateChecklistItem = (docId, name, completed) =>
   api.patch(`/checklist/${docId}`, { name, completed });
 
+// 이메일/비밀번호 인증
+export const signup = (name, email, password) =>
+  api.post("/auth/signup", { name, email, password });
+export const emailLogin = (email, password) =>
+  api.post("/auth/login", { email, password });
+
 // 업로드 후 분석 완료까지 폴링 (status: done | error)
 export async function pollUntilDone(docId, { interval = 3000, maxTries = 100, onTick } = {}) {
   for (let i = 0; i < maxTries; i++) {

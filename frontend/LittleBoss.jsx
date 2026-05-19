@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 import logo from "./logo.svg";
-import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem, deadlinesForMonth } from "./api";
+import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem, deadlinesForMonth, signup as apiSignup, emailLogin as apiEmailLogin } from "./api";
 
 
 // ── Color tokens ──
@@ -245,51 +245,35 @@ function FormGroup({ label, type = "text", placeholder, hint }) {
 function SignupPage({ onLogin, goLogin, toast }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [verifyCode, setVerifyCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
 
-  const handleSignup = () => {
-    if (!name) {
-      toast("이름을 입력해주세요");
-      return;
-    }
-    if (!email) {
-      toast("이메일을 입력해주세요");
-      return;
-    }
-    if (!validateEmail(email)) {
-      toast("이메일 형식이 올바르지 않습니다");
-      return;
-    }
-    if (!verifyCode) {
-      toast("인증번호를 입력해주세요");
-      return;
-    }
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSignup = async () => {
+    if (!name) { toast("이름을 입력해주세요"); return; }
+    if (!email) { toast("이메일을 입력해주세요"); return; }
+    if (!validateEmail(email)) { toast("이메일 형식이 올바르지 않습니다"); return; }
     const passwordError = getPasswordErrorMessage(password);
-    if (passwordError) {
-      toast(passwordError);
-      return;
+    if (passwordError) { toast(passwordError); return; }
+    if (!confirmPassword) { toast("비밀번호 확인을 입력해주세요"); return; }
+    if (password !== confirmPassword) { toast("비밀번호가 일치하지 않습니다"); return; }
+    if (!agreeTerms) { toast("약관에 동의해주세요"); return; }
+
+    setSubmitting(true);
+    try {
+      const { data } = await apiSignup(name, email, password);
+      if (!data.success) { toast(data.message || "회원가입에 실패했어요"); return; }
+      localStorage.setItem("user_id", data.user_id);
+      localStorage.setItem("user_email", data.email);
+      localStorage.setItem("user_name", data.name);
+      onLogin("🎉 회원가입이 완료됐어요!");
+    } catch (e) {
+      toast(e.response?.data?.message || "회원가입 중 오류가 발생했어요");
+    } finally {
+      setSubmitting(false);
     }
-    if (!confirmPassword) {
-      toast("비밀번호 확인을 입력해주세요");
-      return;
-    }
-    if (password !== confirmPassword) {
-      toast("비밀번호가 일치하지 않습니다");
-      return;
-    }
-    if (!agreeTerms) {
-      toast("약관에 동의해주세요");
-      return;
-    }
-    // 이메일 가입 정보 저장 (Google 가입이 아닌 경우)
-    localStorage.setItem("user_name", name);
-    localStorage.setItem("user_email", email);
-    localStorage.setItem("user_id", email);
-    localStorage.setItem(`signup_name_${email}`, name); // 이후 로그인 시 이름 복원용
-    onLogin("🎉 회원가입이 완료됐어요!");
   };
 
   return (
@@ -304,18 +288,8 @@ function SignupPage({ onLogin, goLogin, toast }) {
       </div>
       <div style={{ marginBottom: 16 }}>
         <label style={S.label}>이메일</label>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input style={{ ...S.formInput, flex: 1 }} type="email" placeholder="example@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <button style={{ ...S.btnPrimary, padding: "12px 16px", fontSize: 13, whiteSpace: "nowrap" }} onClick={() => { if (!email) { toast("이메일을 입력해주세요"); } else if (!validateEmail(email)) { toast("이메일 형식이 올바르지 않습니다"); } else { toast("인증번호를 이메일로 전송했어요 📩"); } }}>인증번호 보내기</button>
-        </div>
+        <input style={S.formInput} type="email" placeholder="example@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
         {email && !validateEmail(email) && <p style={{ fontSize: 11, color: C.red, marginTop: 5 }}>⚠ 이메일 형식이 올바르지 않습니다</p>}
-      </div>
-      <div style={{ marginBottom: 16 }}>
-        <label style={S.label}>인증번호</label>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input style={{ ...S.formInput, flex: 1 }} type="text" placeholder="인증번호 입력" value={verifyCode} onChange={(e) => setVerifyCode(e.target.value)} />
-          <button style={{ ...S.btnPrimary, padding: "12px 16px", fontSize: 13, whiteSpace: "nowrap" }} onClick={() => { if (!verifyCode) { toast("인증번호를 입력해주세요"); } else { toast("인증번호가 확인되었어요 ✅"); } }}>확인</button>
-        </div>
       </div>
       <div style={{ marginBottom: 16 }}>
         <label style={S.label}>비밀번호</label>
@@ -332,7 +306,7 @@ function SignupPage({ onLogin, goLogin, toast }) {
         <input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} style={{ marginTop: 2, accentColor: C.purple }} />
         <label><span style={{ color: C.purple, cursor: "pointer" }}>이용약관</span> 및 <span style={{ color: C.purple, cursor: "pointer" }}>개인정보 처리방침</span>에 동의합니다.</label>
       </div>
-      <button style={{ ...S.btnPrimary, width: "100%", justifyContent: "center", padding: 13, fontSize: 15 }} onClick={handleSignup}>가입하기</button>
+      <button style={{ ...S.btnPrimary, width: "100%", justifyContent: "center", padding: 13, fontSize: 15, opacity: submitting ? 0.6 : 1 }} disabled={submitting} onClick={handleSignup}>{submitting ? "처리 중..." : "가입하기"}</button>
       <div style={{ textAlign: "center", fontSize: 13, color: C.textLight, marginTop: 20 }}>
         이미 계정이 있으신가요? <span style={{ color: C.purple, fontWeight: 600, cursor: "pointer" }} onClick={goLogin}>로그인</span>
       </div>
@@ -343,26 +317,26 @@ function SignupPage({ onLogin, goLogin, toast }) {
 function LoginPage({ onLogin, goSignup, goForgotPassword, toast }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleLogin = () => {
-    if (!email) {
-      toast("이메일을 입력해주세요");
-      return;
+  const handleLogin = async () => {
+    if (!email) { toast("이메일을 입력해주세요"); return; }
+    if (!validateEmail(email)) { toast("이메일 형식이 올바르지 않습니다"); return; }
+    if (!password) { toast("비밀번호를 입력해주세요"); return; }
+
+    setSubmitting(true);
+    try {
+      const { data } = await apiEmailLogin(email, password);
+      if (!data.success) { toast(data.message || "로그인에 실패했어요"); return; }
+      localStorage.setItem("user_id", data.user_id);
+      localStorage.setItem("user_email", data.email);
+      localStorage.setItem("user_name", data.name);
+      onLogin("로그인됐어요 👋");
+    } catch (e) {
+      toast(e.response?.data?.message || "로그인 중 오류가 발생했어요");
+    } finally {
+      setSubmitting(false);
     }
-    if (!validateEmail(email)) {
-      toast("이메일 형식이 올바르지 않습니다");
-      return;
-    }
-    if (!password) {
-      toast("비밀번호를 입력해주세요");
-      return;
-    }
-    // 이메일 로그인: 가입 시 저장한 이름 복원 (없으면 이메일 앞부분)
-    const savedName = localStorage.getItem(`signup_name_${email}`) || email.split("@")[0];
-    localStorage.setItem("user_name", savedName);
-    localStorage.setItem("user_email", email);
-    localStorage.setItem("user_id", email);
-    onLogin("로그인됐어요 👋");
   };
 
   return (
@@ -379,7 +353,7 @@ function LoginPage({ onLogin, goSignup, goForgotPassword, toast }) {
         <label style={S.label}>비밀번호</label>
         <input style={S.formInput} type="password" placeholder="비밀번호 입력" value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
-      <button style={{ ...S.btnPrimary, width: "100%", justifyContent: "center", padding: 13, fontSize: 15, marginBottom: 12 }} onClick={handleLogin}>로그인</button>
+      <button style={{ ...S.btnPrimary, width: "100%", justifyContent: "center", padding: 13, fontSize: 15, marginBottom: 12, opacity: submitting ? 0.6 : 1 }} disabled={submitting} onClick={handleLogin}>{submitting ? "로그인 중..." : "로그인"}</button>
       <div style={{ textAlign: "center", fontSize: 12, color: C.textLight, marginBottom: 4 }}>
         <span style={{ color: C.purple, cursor: "pointer" }} onClick={goForgotPassword}>비밀번호를 잊으셨나요?</span>
       </div>
@@ -540,14 +514,20 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
         title: d.title,
         message: incomplete > 0 ? `마감 ${dd.text} · 미완료 서류 ${incomplete}건` : `마감 ${dd.text} · 서류 준비 완료`,
         time: dd.text,
+        kind: "deadline",
+        doc: d,
       });
     });
   // 최근 분석 완료 문서 알림 (최대 3개)
   notifDocs.filter(d => d.status === "done").slice(0, 3).forEach(d => {
-    notificationsRaw.push({ id: nid++, title: d.title, message: "문서 분석이 완료되었습니다", time: d.upload, icon: "✅" });
+    notificationsRaw.push({
+      id: nid++, title: d.title, message: "문서 분석이 완료되었습니다", time: d.upload, icon: "✅",
+      kind: "analysis",
+      doc: d,
+    });
   });
   if (notificationsRaw.length === 0) {
-    notificationsRaw.push({ id: 0, title: "알림 없음", message: "새로운 알림이 없습니다", time: "", icon: "🔔" });
+    notificationsRaw.push({ id: 0, title: "알림 없음", message: "새로운 알림이 없습니다", time: "", icon: "🔔", kind: "empty" });
   }
   const notifications = [...notificationsRaw.filter(n => n.pinned), ...notificationsRaw.filter(n => !n.pinned)];
   useEffect(() => {
@@ -594,20 +574,15 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
                       }
                       const handleNotifClick = () => {
                         setNotifOpen(false);
-                        if (notif.id === 0) {
-                          onNavTo("notif-announcement");
-                        } else if (notif.id === 1) {
-                          onNavTo("schedule-detail", 22);
-                        } else if (notif.id === 2) {
-                          onNavTo("schedule-detail", 22);
-                        } else if (notif.id === 3) {
-                          onNavTo("schedule-detail", 27);
-                        } else if (notif.id === 4) {
-                          onNavTo("notif-analysis");
+                        if (notif.kind === "deadline") {
+                          onNavTo("schedule-detail", notif.doc.title);
+                        } else if (notif.kind === "analysis") {
+                          onNavTo("doc-detail", null, notif.doc);
                         }
                       };
+                      const clickable = notif.kind === "deadline" || notif.kind === "analysis";
                       return (
-                        <div key={notif.id} onClick={handleNotifClick} style={{ padding: "12px 14px", borderBottom: `1px solid ${C.purpleBorder}`, cursor: "pointer", transition: "background 0.2s", background: bgColor, hover: { background: bgColor } }}>
+                        <div key={notif.id} onClick={clickable ? handleNotifClick : undefined} style={{ padding: "12px 14px", borderBottom: `1px solid ${C.purpleBorder}`, cursor: clickable ? "pointer" : "default", transition: "background 0.2s", background: bgColor, hover: { background: bgColor } }}>
                           <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                             {notif.pinned && notif.type === "highlight" && <span style={{ fontSize: 16, flexShrink: 0, marginRight: -2 }}>📌</span>}
                             <span style={{ fontSize: 18 }}>{notif.icon}</span>

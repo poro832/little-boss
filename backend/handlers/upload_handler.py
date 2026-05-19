@@ -50,7 +50,30 @@ def handle(event, context=None):
     if method == 'POST' and path == '/upload':
         return _handle_upload(event)
 
+    if method == 'POST' and path == '/auth/signup':
+        from handlers.auth_handler import signup
+        b = _json_body(event)
+        r = signup(b.get('name'), b.get('email'), b.get('password'))
+        return _response(r.pop('code', 200 if r.get('success') else 400), r)
+
+    if method == 'POST' and path == '/auth/login':
+        from handlers.auth_handler import login
+        b = _json_body(event)
+        r = login(b.get('email'), b.get('password'))
+        return _response(r.pop('code', 200 if r.get('success') else 401), r)
+
     return _response(400, {'success': False, 'message': f'알 수 없는 경로: {method} {path}'})
+
+
+def _json_body(event) -> dict:
+    """JSON 본문 파싱 (base64 인코딩 대응)"""
+    body = event.get('body') or '{}'
+    if event.get('isBase64Encoded'):
+        body = base64.b64decode(body).decode('utf-8', errors='ignore')
+    try:
+        return json.loads(body) if isinstance(body, str) else json.loads(body.decode())
+    except Exception:
+        return {}
 
 
 def _handle_upload(event):

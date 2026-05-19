@@ -44,6 +44,37 @@ def get_file(file_path: str) -> bytes:
     return obj['Body'].read()
 
 
+def get_user(user_id: str) -> dict:
+    """사용자 조회 (이메일/비밀번호 인증). 없으면 None"""
+    if ENV == "local":
+        path = LOCAL_DB_PATH / "_users.json"
+        if not path.exists():
+            return None
+        users = json.loads(path.read_text(encoding="utf-8"))
+        return users.get(user_id)
+
+    import boto3
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table(os.getenv('USERS_TABLE', 'sgu-pj-03-users'))
+    resp = table.get_item(Key={'user_id': user_id})
+    return resp.get('Item')
+
+
+def save_user(data: dict):
+    """사용자 저장 (data['user_id'] 필수)"""
+    if ENV == "local":
+        path = LOCAL_DB_PATH / "_users.json"
+        users = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        users[data["user_id"]] = data
+        path.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+        return
+
+    import boto3
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table(os.getenv('USERS_TABLE', 'sgu-pj-03-users'))
+    table.put_item(Item=data)
+
+
 def put_s3_json(key: str, data: dict):
     """S3에 작은 JSON 객체 저장 (ai-analyzer 트리거용 마커).
     로컬에서는 동작하지 않음 (S3 이벤트가 로컬에 없으므로)."""
