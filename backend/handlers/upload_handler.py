@@ -14,7 +14,7 @@ import dataclasses
 
 
 ALLOWED_EXTENSIONS = {
-    ".pdf", ".jpg", ".jpeg", ".png", ".heic", ".gif", ".webp", ".tiff", ".tif", ".bmp",
+    ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".tif",
     ".docx", ".hwpx", ".txt", ".md", ".csv", ".hwp", ".doc",
 }
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB

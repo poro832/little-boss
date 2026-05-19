@@ -16,7 +16,7 @@ from pathlib import Path
 ENV = os.getenv("ENV", "local")
 
 PDF_EXT = {".pdf"}
-IMAGE_EXT = {".jpg", ".jpeg", ".png", ".heic", ".gif", ".webp", ".tiff", ".tif", ".bmp"}
+IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".tif"}
 TEXT_DIRECT_EXT = {".txt", ".md", ".csv"}
 
 
