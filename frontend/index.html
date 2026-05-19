@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>리틀보스 - AI 행정 비서</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --purple: #6B4FE8;
@@ -16,6 +16,7 @@
     --text-light: #9B90B8;
     --white: #FFFFFF;
     --bg: #F2F1F6;
+    --grad: linear-gradient(135deg, var(--purple-light) 0%, var(--purple) 48%, var(--purple-dark) 100%);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -32,351 +33,250 @@
   nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 48px;
-    background: rgba(255,255,255,0.88);
+    padding: 16px 48px;
+    background: rgba(255,255,255,0.82);
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(107,79,232,0.08);
-    transition: box-shadow 0.3s;
+    border-bottom: 1px solid rgba(107,79,232,0.06);
+    transition: box-shadow 0.3s, padding 0.3s;
   }
-  nav.scrolled { box-shadow: 0 4px 32px rgba(107,79,232,0.10); }
+  nav.scrolled { box-shadow: 0 4px 32px rgba(107,79,232,0.10); padding: 12px 48px; }
 
   .nav-logo {
     display: flex; align-items: center; gap: 10px;
-    font-weight: 700; font-size: 18px; color: var(--text-dark);
+    font-weight: 800; font-size: 18px; color: var(--text-dark);
     text-decoration: none;
   }
-  .nav-logo img {
-    width: 40px; height: 40px; border-radius: 8px;
-  }
+  .nav-logo img { width: 38px; height: 38px; border-radius: 9px; }
 
-  .nav-links {
-    display: flex; gap: 36px; list-style: none;
-  }
+  .nav-links { display: flex; gap: 36px; list-style: none; }
   .nav-links a {
     font-size: 14px; font-weight: 500; color: var(--text-mid);
-    text-decoration: none; transition: color 0.2s;
+    text-decoration: none; transition: color 0.2s; position: relative;
+  }
+  .nav-links a::after {
+    content: ''; position: absolute; left: 0; bottom: -6px; width: 0; height: 2px;
+    background: var(--purple); border-radius: 2px; transition: width 0.25s;
   }
   .nav-links a:hover { color: var(--purple); }
+  .nav-links a:hover::after { width: 100%; }
 
   .nav-cta {
     background: var(--purple); color: white;
     padding: 10px 22px; border-radius: 10px;
     font-size: 14px; font-weight: 600;
-    text-decoration: none; transition: background 0.2s, transform 0.2s;
+    text-decoration: none; transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
     cursor: pointer; border: none;
   }
-  .nav-cta:hover { background: var(--purple-dark); transform: translateY(-1px); }
+  .nav-cta:hover { background: var(--purple-dark); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(107,79,232,0.28); }
 
   /* ── HERO ── */
   .hero {
     min-height: 100vh;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     position: relative;
-    padding: 120px 24px 80px;
+    padding: 140px 24px 90px;
     overflow: hidden;
   }
-
   .hero-bg {
     position: absolute; inset: 0; z-index: 0;
-    background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(107,79,232,0.12) 0%, transparent 70%),
-                radial-gradient(ellipse 50% 40% at 80% 80%, rgba(139,114,240,0.08) 0%, transparent 60%);
+    background:
+      radial-gradient(ellipse 70% 55% at 50% -5%, rgba(107,79,232,0.13) 0%, transparent 70%),
+      radial-gradient(ellipse 45% 40% at 85% 85%, rgba(139,114,240,0.09) 0%, transparent 60%);
   }
-
+  .hero-grid {
+    position: absolute; inset: 0; z-index: 0; opacity: 0.4;
+    background-image:
+      linear-gradient(rgba(107,79,232,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(107,79,232,0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 60% 50% at 50% 35%, black 0%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 35%, black 0%, transparent 75%);
+  }
   .blob {
-    position: absolute; border-radius: 50%; filter: blur(80px); z-index: 0;
-    animation: float 8s ease-in-out infinite;
+    position: absolute; border-radius: 50%; filter: blur(90px); z-index: 0;
+    animation: float 14s ease-in-out infinite;
   }
-  .blob-1 { width: 500px; height: 500px; background: rgba(107,79,232,0.12); top: -100px; left: -100px; animation-delay: 0s; }
-  .blob-2 { width: 350px; height: 350px; background: rgba(139,114,240,0.10); bottom: 0; right: -80px; animation-delay: 3s; }
-  .blob-3 { width: 250px; height: 250px; background: rgba(107,79,232,0.08); top: 40%; left: 60%; animation-delay: 1.5s; }
-
+  .blob-1 { width: 480px; height: 480px; background: rgba(107,79,232,0.13); top: -120px; left: -120px; }
+  .blob-2 { width: 360px; height: 360px; background: rgba(139,114,240,0.11); bottom: -60px; right: -90px; animation-delay: 5s; }
+  .blob-3 { width: 240px; height: 240px; background: rgba(107,79,232,0.07); top: 45%; left: 62%; animation-delay: 2.5s; }
   @keyframes float {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(20px, -30px) scale(1.05); }
-    66% { transform: translate(-15px, 20px) scale(0.97); }
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(18px,-26px) scale(1.04); }
   }
 
-  .hero-content {
-    position: relative; z-index: 1; text-align: center; max-width: 700px;
-  }
+  .hero-content { position: relative; z-index: 1; text-align: center; max-width: 760px; }
 
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 16px; border-radius: 999px;
+    background: var(--purple-bg); color: var(--purple);
+    font-size: 13px; font-weight: 600; margin-bottom: 26px;
+    border: 1px solid rgba(107,79,232,0.15);
+  }
   .hero-title {
-    font-size: clamp(32px, 6vw, 56px);
-    font-weight: 700;
-    margin-bottom: 20px;
-    line-height: 1.2;
+    font-size: clamp(34px, 6vw, 58px);
+    font-weight: 800; margin-bottom: 22px; line-height: 1.18;
+    letter-spacing: -0.02em;
   }
-
+  .hero-title .hl {
+    background: var(--grad); -webkit-background-clip: text;
+    background-clip: text; color: transparent;
+  }
   .hero-subtitle {
-    font-size: 18px;
-    color: var(--text-light);
-    margin-bottom: 40px;
-    line-height: 1.6;
+    font-size: 18px; color: var(--text-mid);
+    margin-bottom: 38px; line-height: 1.65;
   }
-
-  .hero-buttons {
-    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
-  }
+  .hero-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
   .btn-primary {
-    background: var(--purple);
-    color: white;
-    padding: 16px 36px;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 600;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    transition: background 0.2s, transform 0.2s;
-    border: none;
-    cursor: pointer;
+    background: var(--purple); color: white;
+    padding: 15px 34px; border-radius: 12px;
+    font-size: 16px; font-weight: 600; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 10px;
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    border: none; cursor: pointer;
+    box-shadow: 0 10px 28px rgba(107,79,232,0.30);
   }
-  .btn-primary:hover {
-    background: var(--purple-dark);
-    transform: translateY(-2px);
-  }
+  .btn-primary:hover { background: var(--purple-dark); transform: translateY(-2px); box-shadow: 0 14px 34px rgba(107,79,232,0.38); }
 
   .btn-secondary {
-    background: transparent;
-    color: var(--purple);
-    padding: 16px 36px;
-    border: 2px solid var(--purple);
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 600;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    transition: all 0.2s;
-    cursor: pointer;
+    background: var(--white); color: var(--purple);
+    padding: 15px 34px; border: 1.5px solid rgba(107,79,232,0.35);
+    border-radius: 12px; font-size: 16px; font-weight: 600;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 10px;
+    transition: all 0.2s; cursor: pointer;
   }
-  .btn-secondary:hover {
-    background: var(--purple-bg);
-    transform: translateY(-2px);
+  .btn-secondary:hover { background: var(--purple-bg); border-color: var(--purple); transform: translateY(-2px); }
+
+  /* ── HERO PRODUCT MOCKUP ── */
+  .mockup {
+    position: relative; z-index: 1;
+    width: min(880px, 92vw); margin: 64px auto 0;
+    border-radius: 16px; overflow: hidden;
+    background: var(--white);
+    border: 1px solid rgba(107,79,232,0.12);
+    box-shadow: 0 30px 80px rgba(107,79,232,0.20), 0 8px 24px rgba(26,16,37,0.06);
   }
+  .mockup-bar {
+    display: flex; align-items: center; gap: 7px;
+    padding: 13px 16px; background: #FAF9FE;
+    border-bottom: 1px solid rgba(107,79,232,0.08);
+  }
+  .mockup-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .mockup-body { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; padding: 22px; background: var(--bg); }
+  .mk-card { background: var(--white); border-radius: 12px; padding: 18px; box-shadow: 0 1px 6px rgba(107,79,232,0.06); }
+  .mk-tag { display:inline-block; font-size: 11px; font-weight: 700; color: var(--purple); background: var(--purple-bg); padding: 4px 10px; border-radius: 6px; margin-bottom: 10px; }
+  .mk-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .mk-sub { font-size: 12px; color: var(--text-light); line-height: 1.6; }
+  .mk-row { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--text-mid); padding: 8px 0; border-bottom: 1px solid rgba(107,79,232,0.06); }
+  .mk-row:last-child { border-bottom: none; }
+  .mk-chip { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; }
+  .mk-chip.red { color: #E53E3E; background: #FFF0F0; }
+  .mk-chip.purple { color: var(--purple); background: var(--purple-bg); }
+  .mk-check { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--purple); display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .mk-check.done { background: var(--purple); }
+  .mk-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 4px; }
+  .mk-cal span { font-size: 10px; text-align: center; color: var(--text-light); padding: 5px 0; border-radius: 5px; }
+  .mk-cal span.on { background: var(--purple); color: white; font-weight: 700; }
+  .mk-cal span.soft { background: var(--purple-bg); color: var(--purple); font-weight: 600; }
+
+  /* ── SECTIONS ── */
+  .section { padding: 90px 24px; max-width: 1180px; margin: 0 auto; }
+  .section-eyebrow { text-align: center; font-size: 13px; font-weight: 700; color: var(--purple); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px; }
+  .section-title { font-size: clamp(28px, 4vw, 38px); font-weight: 800; text-align: center; margin-bottom: 14px; letter-spacing: -0.01em; }
+  .section-desc { text-align: center; font-size: 16px; color: var(--text-light); margin-bottom: 60px; line-height: 1.6; }
+
+  /* ── HOW ── */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; position: relative; }
+  .steps::before {
+    content: ''; position: absolute; top: 24px; left: 12%; right: 12%; height: 2px;
+    background: repeating-linear-gradient(90deg, rgba(107,79,232,0.3) 0 8px, transparent 8px 16px);
+    z-index: 0;
+  }
+  .step { text-align: center; position: relative; z-index: 1; }
+  .step-number {
+    width: 50px; height: 50px; background: var(--grad); color: white;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 19px; margin: 0 auto 18px;
+    box-shadow: 0 8px 20px rgba(107,79,232,0.30); border: 4px solid var(--white);
+  }
+  .step h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  .step p { font-size: 13.5px; color: var(--text-mid); line-height: 1.65; }
 
   /* ── FEATURES ── */
-  .section {
-    padding: 80px 24px;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  .section-title {
-    font-size: 36px;
-    font-weight: 700;
-    text-align: center;
-    margin-bottom: 60px;
-  }
-
-  .features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
-  }
-
+  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 22px; }
   .feature-card {
-    padding: 36px 28px;
-    background: var(--white);
-    border: 1px solid rgba(107,79,232,0.1);
-    border-radius: 16px;
-    transition: all 0.3s;
+    padding: 34px 28px; background: var(--white);
+    border: 1px solid rgba(107,79,232,0.1); border-radius: 18px;
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
   }
   .feature-card:hover {
-    border-color: var(--purple);
-    box-shadow: 0 12px 40px rgba(107,79,232,0.15);
-    transform: translateY(-4px);
+    border-color: rgba(107,79,232,0.4);
+    box-shadow: 0 16px 44px rgba(107,79,232,0.16);
+    transform: translateY(-6px);
   }
-
   .feature-icon {
-    width: 50px;
-    height: 50px;
-    background: var(--purple-bg);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    margin-bottom: 16px;
+    width: 52px; height: 52px; background: var(--grad);
+    border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px; box-shadow: 0 8px 18px rgba(107,79,232,0.25);
   }
-
-  .feature-card h3 {
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 12px;
-    color: var(--text-dark);
-  }
-
-  .feature-card p {
-    font-size: 14px;
-    color: var(--text-mid);
-    line-height: 1.7;
-  }
-
-  /* ── HOW IT WORKS ── */
-  .how-section {
-    position: relative;
-  }
-
-  .steps {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 32px;
-    margin-top: 48px;
-  }
-
-  .step {
-    text-align: center;
-  }
-
-  .step-number {
-    width: 48px;
-    height: 48px;
-    background: var(--purple);
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 20px;
-    margin: 0 auto 16px;
-  }
-
-  .step h3 {
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 12px;
-  }
-
-  .step p {
-    font-size: 14px;
-    color: var(--text-mid);
-    line-height: 1.6;
-  }
+  .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; color: var(--text-dark); }
+  .feature-card p { font-size: 14px; color: var(--text-mid); line-height: 1.7; }
 
   /* ── CTA ── */
+  .cta-wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 90px; }
   .cta-section {
-    background: linear-gradient(135deg, var(--purple) 0%, #9B6FFF 100%);
-    border-radius: 24px;
-    padding: 64px 48px;
-    text-align: center;
-    margin: 0 24px;
-    position: relative;
-    overflow: hidden;
+    background: var(--grad); border-radius: 28px;
+    padding: 70px 48px; text-align: center; position: relative; overflow: hidden;
   }
-
-  .cta-section h2 {
-    font-size: clamp(24px, 4vw, 40px);
-    font-weight: 700;
-    color: white;
-    margin-bottom: 16px;
+  .cta-section::before {
+    content:''; position:absolute; top:-80px; right:-60px; width:260px; height:260px;
+    border-radius:50%; background:rgba(255,255,255,0.08);
   }
-
-  .cta-section p {
-    font-size: 16px;
-    color: rgba(255,255,255,0.85);
-    margin-bottom: 36px;
+  .cta-section::after {
+    content:''; position:absolute; bottom:-110px; left:-50px; width:300px; height:300px;
+    border-radius:50%; background:rgba(255,255,255,0.06);
   }
-
+  .cta-section h2 { font-size: clamp(26px, 4vw, 40px); font-weight: 800; color: white; margin-bottom: 14px; position: relative; }
+  .cta-section p { font-size: 16px; color: rgba(255,255,255,0.85); margin-bottom: 34px; position: relative; }
   .btn-white {
-    background: white;
-    color: var(--purple);
-    padding: 14px 32px;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 600;
-    text-decoration: none;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    transition: all 0.2s;
+    background: white; color: var(--purple);
+    padding: 15px 36px; border-radius: 12px; font-size: 16px; font-weight: 700;
+    text-decoration: none; border: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 10px;
+    transition: transform 0.2s, box-shadow 0.2s; position: relative;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
   }
-  .btn-white:hover {
-    background: var(--purple-bg);
-    transform: translateY(-2px);
-  }
+  .btn-white:hover { transform: translateY(-2px); box-shadow: 0 16px 38px rgba(0,0,0,0.24); }
 
   /* ── FOOTER ── */
-  footer {
-    background: var(--text-dark);
-    color: white;
-    padding: 48px 24px;
-    text-align: center;
-    font-size: 14px;
-  }
+  footer { background: var(--text-dark); color: white; padding: 48px 24px; font-size: 14px; }
+  .footer-content { max-width: 1180px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; }
+  .footer-logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 18px; }
+  .footer-logo img { width: 32px; height: 32px; border-radius: 6px; }
+  .footer-links { display: flex; gap: 30px; list-style: none; }
+  .footer-links a { color: rgba(255,255,255,0.65); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: white; }
 
-  .footer-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 24px;
-  }
-
-  .footer-logo {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 700;
-    font-size: 18px;
-  }
-  .footer-logo img {
-    width: 32px; height: 32px; border-radius: 6px;
-  }
-
-  .footer-links {
-    display: flex;
-    gap: 32px;
-    list-style: none;
-  }
-  .footer-links a {
-    color: rgba(255,255,255,0.7);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-  .footer-links a:hover {
-    color: white;
-  }
+  /* ── SCROLL REVEAL ── */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
 
   @media (max-width: 768px) {
-    nav {
-      padding: 14px 24px;
-    }
-    .nav-links {
-      display: none;
-    }
-    .hero {
-      padding: 100px 20px 60px;
-    }
-    .hero-title {
-      font-size: 28px;
-    }
-    .hero-subtitle {
-      font-size: 16px;
-    }
-    .section {
-      padding: 60px 20px;
-    }
-    .section-title {
-      font-size: 28px;
-      margin-bottom: 40px;
-    }
-    .cta-section {
-      padding: 40px 24px;
-      margin: 0 12px;
-    }
-    .footer-content {
-      flex-direction: column;
-      gap: 16px;
-    }
+    nav, nav.scrolled { padding: 14px 22px; }
+    .nav-links { display: none; }
+    .hero { padding: 110px 20px 60px; }
+    .hero-subtitle { font-size: 16px; }
+    .section { padding: 60px 20px; }
+    .section-desc { margin-bottom: 40px; }
+    .steps { grid-template-columns: 1fr 1fr; gap: 32px 20px; }
+    .steps::before { display: none; }
+    .mockup-body { grid-template-columns: 1fr; }
+    .cta-section { padding: 48px 26px; }
+    .footer-content { flex-direction: column; gap: 16px; text-align: center; }
+  }
+  @media (max-width: 480px) {
+    .steps { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -398,16 +298,17 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
   <div class="blob blob-1"></div>
   <div class="blob blob-2"></div>
   <div class="blob blob-3"></div>
 
   <div class="hero-content">
-    <h1 class="hero-title">복잡한 서류, 이제 AI가 챙겨드립니다</h1>
+    <span class="hero-badge">✦ AI 행정 비서 · LittleBoss</span>
+    <h1 class="hero-title">복잡한 행정 서류,<br><span class="hl">AI가 대신 챙겨드립니다</span></h1>
     <p class="hero-subtitle">
-      리틀보스는 당신의 서류 관리 어시스턴트입니다.
-      <br>
-      장학금 신청, 졸업 서류, 모든 일정을 한 곳에서 관리하세요.
+      공지문만 올리면 마감일 · 준비서류 · 일정을 자동으로 추출해<br>
+      캘린더에 등록하고 제때 알림까지 보내드려요.
     </p>
     <div class="hero-buttons">
       <a href="app.html" class="btn-primary">
@@ -416,71 +317,138 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
         </svg>
       </a>
-      <button class="btn-secondary" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">
-        자세히 알아보기
+      <button class="btn-secondary" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">
+        이용방법 보기
       </button>
+    </div>
+  </div>
+
+  <!-- 제품 목업 -->
+  <div class="mockup reveal">
+    <div class="mockup-bar">
+      <span class="mockup-dot" style="background:#FF5F57"></span>
+      <span class="mockup-dot" style="background:#FEBC2E"></span>
+      <span class="mockup-dot" style="background:#28C840"></span>
+      <span style="margin-left:12px;font-size:12px;color:var(--text-light);font-weight:600">LittleBoss · 분석 결과</span>
+    </div>
+    <div class="mockup-body">
+      <div class="mk-card">
+        <span class="mk-tag">장학금 공지</span>
+        <div class="mk-title">2026-1학기 국가장학금 신청 안내</div>
+        <div class="mk-sub">신청 6/2~6/20, 서류 6/25 마감. 소득분위 확인 및 필수 서류 제출 필요.</div>
+        <div style="margin-top:16px">
+          <div class="mk-row"><span class="mk-chip red">D-3</span>신청 마감 · 2026-06-20 18:00</div>
+          <div class="mk-row"><span class="mk-chip purple">D-8</span>서류 심사 마감 · 2026-06-25</div>
+          <div class="mk-row"><span class="mk-chip purple">D-23</span>결과 발표 · 2026-07-10</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="mk-card">
+          <div class="mk-title" style="margin-bottom:12px">준비 서류</div>
+          <div class="mk-row" style="border:none;padding:5px 0"><span class="mk-check done"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4"><path d="M5 13l4 4L19 7"/></svg></span>국가장학금 신청서</div>
+          <div class="mk-row" style="border:none;padding:5px 0"><span class="mk-check"></span>가족관계증명서</div>
+          <div class="mk-row" style="border:none;padding:5px 0"><span class="mk-check"></span>재학증명서</div>
+        </div>
+        <div class="mk-card">
+          <div class="mk-title" style="margin-bottom:10px">6월</div>
+          <div class="mk-cal">
+            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+            <span>1</span><span>2</span><span>3</span><span>4</span><span class="soft">5</span><span>6</span><span>7</span>
+            <span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span>
+            <span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span class="on">20</span><span>21</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- HOW IT WORKS -->
 <section class="section how-section" id="how">
-  <h2 class="section-title">어떻게 사용하나요?</h2>
+  <div class="section-eyebrow reveal">HOW IT WORKS</div>
+  <h2 class="section-title reveal">어떻게 사용하나요?</h2>
+  <p class="section-desc reveal">네 단계면 충분합니다. 복잡한 설정 없이 바로 시작하세요.</p>
   <div class="steps">
-    <div class="step">
+    <div class="step reveal">
       <div class="step-number">1</div>
-      <h3>계정 만들기</h3>
-      <p>간단한 회원가입으로 시작하세요. 이메일이나 Google 계정으로 가입 가능합니다.</p>
+      <h3>로그인</h3>
+      <p>Google 계정 또는 이메일로 간편하게 시작하세요.</p>
     </div>
-    <div class="step">
+    <div class="step reveal" style="transition-delay:.08s">
       <div class="step-number">2</div>
       <h3>서류 업로드</h3>
-      <p>필요한 서류를 업로드하면 AI가 자동으로 분석합니다.</p>
+      <p>PDF·이미지·DOCX 등 공지 문서를 업로드합니다.</p>
     </div>
-    <div class="step">
+    <div class="step reveal" style="transition-delay:.16s">
       <div class="step-number">3</div>
-      <h3>일정 확인</h3>
-      <p>마감일과 준비해야 할 것들을 한눈에 확인하세요.</p>
+      <h3>AI 자동 분석</h3>
+      <p>마감일·준비서류·일정을 AI가 자동으로 추출합니다.</p>
     </div>
-    <div class="step">
+    <div class="step reveal" style="transition-delay:.24s">
       <div class="step-number">4</div>
-      <h3>완료!</h3>
-      <p>리틀보스가 도와주니 더 이상 놓치는 것이 없습니다.</p>
+      <h3>일정 관리</h3>
+      <p>캘린더 등록과 D-7·D-3·D-1 알림으로 놓치지 마세요.</p>
     </div>
   </div>
 </section>
 
 <!-- FEATURES -->
 <section class="section" id="features">
-  <h2 class="section-title">주요 기능</h2>
+  <div class="section-eyebrow reveal">FEATURES</div>
+  <h2 class="section-title reveal">주요 기능</h2>
+  <p class="section-desc reveal">행정 서류 관리에 필요한 모든 것을 한 곳에서.</p>
   <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon">📅</div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </div>
       <h3>스마트 일정 관리</h3>
-      <p>장학금 신청, 졸업 서류 등 모든 마감일을 자동으로 추적하고 알림을 받으세요.</p>
+      <p>장학금·졸업 서류 등 모든 마감일을 자동 추적하고 캘린더에 등록합니다.</p>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">🤖</div>
+    <div class="feature-card reveal" style="transition-delay:.06s">
+      <div class="feature-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c1.5 0 3 1.5 3 3a3 3 0 0 1 0 6c0 1.5-1.5 3-3 3a4 4 0 0 1-8 0c-1.5 0-3-1.5-3-3a3 3 0 0 1 0-6c0-1.5 1.5-3 3-3a4 4 0 0 1 4-4z"/><path d="M12 8v8M9 12h6"/></svg>
+      </div>
       <h3>AI 문서 분석</h3>
-      <p>제출하신 서류를 AI가 분석하여 부족한 부분을 미리 알려드립니다.</p>
+      <p>제출 서류를 AI가 분석해 마감일과 부족한 서류를 미리 알려드립니다.</p>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">📋</div>
-      <h3>체크리스트</h3>
-      <p>각 절차별 체크리스트로 빠뜨린 것이 없는지 확인하세요.</p>
+    <div class="feature-card reveal" style="transition-delay:.12s">
+      <div class="feature-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </div>
+      <h3>준비 체크리스트</h3>
+      <p>절차별 체크리스트와 진행률로 빠뜨린 서류가 없는지 확인합니다.</p>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">⏰</div>
-      <h3>알림 서비스</h3>
-      <p>중요한 날짜가 다가오면 미리 알림을 받고 준비할 수 있습니다.</p>
+    <div class="feature-card reveal" style="transition-delay:.18s">
+      <div class="feature-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      </div>
+      <h3>마감 알림</h3>
+      <p>D-7·D-3·D-1 리마인더로 중요한 날짜를 놓치지 않게 챙겨드립니다.</p>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">💾</div>
+    <div class="feature-card reveal" style="transition-delay:.24s">
+      <div class="feature-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
       <h3>안전한 저장</h3>
-      <p>모든 서류와 정보는 안전하게 암호화되어 저장됩니다.</p>
+      <p>모든 서류와 정보는 암호화되어 안전하게 보관됩니다.</p>
     </div>
   </div>
 </section>
+
+<!-- CTA -->
+<div class="cta-wrap">
+  <div class="cta-section reveal">
+    <h2>이제 마감일 걱정은 그만</h2>
+    <p>리틀보스가 행정 서류를 대신 챙겨드립니다. 지금 바로 시작하세요.</p>
+    <a href="app.html" class="btn-white">
+      무료로 시작하기
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+      </svg>
+    </a>
+  </div>
+</div>
 
 <!-- FOOTER -->
 <footer>
@@ -490,25 +458,25 @@
       LittleBoss
     </div>
     <ul class="footer-links">
-      <li><a href="#">서비스 소개</a></li>
-      <li><a href="#">이용약관</a></li>
-      <li><a href="#">개인정보처리방침</a></li>
-      <li><a href="#">문의</a></li>
+      <li><a href="#features">서비스 소개</a></li>
+      <li><a href="#how">이용방법</a></li>
+      <li><a href="app.html">시작하기</a></li>
     </ul>
-    <div>© 2026 리틀보스. 서류 관리 어시스턴트.</div>
+    <div>© 2026 리틀보스. AI 행정 비서.</div>
   </div>
 </footer>
 
 <script>
-  // 스크롤 시 네비게이션 스타일 변경
+  // 네비게이션 스크롤 스타일
   window.addEventListener('scroll', () => {
-    const nav = document.getElementById('nav');
-    if (window.scrollY > 50) {
-      nav.classList.add('scrolled');
-    } else {
-      nav.classList.remove('scrolled');
-    }
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 50);
   });
+
+  // 스크롤 진입 애니메이션
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 </script>
 
 </body>
