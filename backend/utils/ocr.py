@@ -78,23 +78,32 @@ def _extract_docx(file_path: str) -> str:
 
 
 def _extract_hwpx(file_path: str) -> str:
-    """HWPX(한글 신형식) = zip 컨테이너. Contents/section*.xml 텍스트 추출"""
+    """HWPX(한글 신형식) = OPC zip 컨테이너. Contents 내 섹션 XML에서 텍스트 추출"""
     data = _read_bytes(file_path)
-    chunks = []
     try:
-        with zipfile.ZipFile(io.BytesIO(data)) as z:
-            names = sorted(n for n in z.namelist()
-                           if re.match(r"Contents/section\d+\.xml", n))
-            for n in names:
-                xml = z.read(n).decode("utf-8", errors="ignore")
-                # <hp:t> 태그 안 텍스트 우선, 실패 시 전체 태그 제거
-                texts = re.findall(r"<hp:t>(.*?)</hp:t>", xml, re.DOTALL)
-                if texts:
-                    chunks.append(" ".join(texts))
-                else:
-                    chunks.append(re.sub(r"<[^>]+>", " ", xml))
+        zf = zipfile.ZipFile(io.BytesIO(data))
     except zipfile.BadZipFile:
         return "__UNSUPPORTED__"
+
+    chunks = []
+    with zf:
+        # sectionN.xml 우선, 없으면 Contents/ 내 모든 xml
+        names = [n for n in zf.namelist() if re.search(r"section\d+\.xml$", n, re.I)]
+        if not names:
+            names = [n for n in zf.namelist()
+                     if n.lower().startswith("contents/") and n.lower().endswith(".xml")]
+        for n in sorted(names):
+            try:
+                xml = zf.read(n).decode("utf-8", errors="ignore")
+            except Exception:
+                continue
+            # <hp:t ...> 또는 <t ...> (속성 유무 모두), 중첩 태그 제거
+            texts = re.findall(r"<(?:\w+:)?t\b[^>]*>(.*?)</(?:\w+:)?t>", xml, re.DOTALL)
+            if texts:
+                chunks.append(" ".join(re.sub(r"<[^>]+>", "", t) for t in texts))
+            else:
+                chunks.append(re.sub(r"<[^>]+>", " ", xml))
+
     text = re.sub(r"\s+", " ", " ".join(chunks)).strip()
     return text or "__IMAGE_FILE__"
 
