@@ -904,6 +904,7 @@ function UploadPage({ onNavTo }) {
   const [analysis, setAnalysis] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [errMsg, setErrMsg] = useState("");
+  const [calMsg, setCalMsg] = useState("");
   const fileInputRef = useRef(null);
   const { docs: serverDocs } = useDocuments();
   const recentFiles = serverDocs
@@ -931,6 +932,22 @@ function UploadPage({ onNavTo }) {
         });
         setP(100);
         setAnalysis({ ...(doc.analysis || {}), doc_id: data.doc_id, filename: file.name });
+
+        // 분석 완료 → Google 로그인 상태면 캘린더 자동 등록
+        const a = doc.analysis || {};
+        const token = localStorage.getItem("user_token");
+        const evCount = (a.calendar_events || []).length;
+        if (evCount > 0 && token) {
+          setCalMsg("📅 캘린더에 일정 등록 중...");
+          try {
+            const { data: cal } = await registerCalendar(data.doc_id, token);
+            setCalMsg(cal.success ? `📅 ${cal.message}` : `캘린더 등록 실패: ${cal.message}`);
+          } catch (er) {
+            setCalMsg("캘린더 자동 등록 실패: " + (er.response?.data?.message || er.message));
+          }
+        } else if (evCount > 0 && !token) {
+          setCalMsg("ℹ️ Google 로그인하면 일정이 캘린더에 자동 등록됩니다.");
+        }
       } catch (e) {
         setErrMsg(`${file.name}: ${e.message || "처리 실패"}`);
         setP(100, { failed: true });
@@ -996,7 +1013,7 @@ function UploadPage({ onNavTo }) {
             ))}
             {queue.length > 0 && (
               <div style={{ display: "flex", gap: 10, marginTop: 10, justifyContent: "flex-end" }}>
-                <button onClick={() => { setQueue([]); setAnalysis(null); setErrMsg(""); if (fileInputRef.current) fileInputRef.current.value = ''; }} style={{ ...S.btnOutline, fontSize: 13 }}>초기화</button>
+                <button onClick={() => { setQueue([]); setAnalysis(null); setErrMsg(""); setCalMsg(""); if (fileInputRef.current) fileInputRef.current.value = ''; }} style={{ ...S.btnOutline, fontSize: 13 }}>초기화</button>
               </div>
             )}
             {analyzing && (
@@ -1041,21 +1058,29 @@ function UploadPage({ onNavTo }) {
                 )}
 
                 {(analysis.calendar_events || []).length > 0 && (
-                  <button
-                    onClick={async () => {
-                      const token = localStorage.getItem("user_token");
-                      if (!token) { alert("Google 로그인이 필요합니다."); return; }
-                      try {
-                        const { data } = await registerCalendar(analysis.doc_id, token);
-                        alert(data.message || `${data.count}개 일정이 캘린더에 등록되었습니다.`);
-                      } catch (e) {
-                        alert("캘린더 등록 실패: " + (e.response?.data?.message || e.message));
-                      }
-                    }}
-                    style={{ ...S.btnPrimary, width: "100%", justifyContent: "center" }}
-                  >
-                    📅 캘린더에 {(analysis.calendar_events || []).length}개 일정 등록
-                  </button>
+                  <>
+                    {calMsg && (
+                      <div style={{ background: calMsg.startsWith("📅") ? C.greenBg : C.purpleBg, color: calMsg.startsWith("📅") ? C.green : C.purple, borderRadius: 10, padding: "12px 14px", fontSize: 13, fontWeight: 600, marginBottom: 10 }}>
+                        {calMsg}
+                      </div>
+                    )}
+                    <button
+                      onClick={async () => {
+                        const token = localStorage.getItem("user_token");
+                        if (!token) { setCalMsg("ℹ️ Google 로그인하면 일정이 캘린더에 등록됩니다."); return; }
+                        setCalMsg("📅 캘린더에 일정 등록 중...");
+                        try {
+                          const { data } = await registerCalendar(analysis.doc_id, token);
+                          setCalMsg(data.success ? `📅 ${data.message}` : `캘린더 등록 실패: ${data.message}`);
+                        } catch (e) {
+                          setCalMsg("캘린더 등록 실패: " + (e.response?.data?.message || e.message));
+                        }
+                      }}
+                      style={{ ...S.btnOutline, width: "100%", justifyContent: "center" }}
+                    >
+                      📅 캘린더에 다시 등록 ({(analysis.calendar_events || []).length}개)
+                    </button>
+                  </>
                 )}
               </div>
             )}
@@ -2105,22 +2130,33 @@ function ProfilePage() {
               <button style={{ ...S.btnOutline, color: C.red, borderColor: C.red }}>회원 탈퇴</button>
             </div>
           )}
-          {settingsTab === "calendar" && (
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Google 캘린더 연동</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: C.greenBg, borderRadius: 10, marginBottom: 16 }}>
-                <span style={{ fontSize: 20 }}>✅</span>
-                <div><div style={{ fontSize: 13, fontWeight: 600, color: C.green }}>연동 완료</div><div style={{ fontSize: 12, color: C.textLight }}>gaun@gmail.com</div></div>
-              </div>
-              {[["자동 일정 등록","마감일을 캘린더에 자동 추가",true],["리마인더 자동 설정","마감 3일 전 리마인더 자동 추가",true]].map(([lbl,sub,on]) => (
-                <div key={lbl} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${C.purpleBorder}` }}>
-                  <div><div style={{ fontSize: 13, fontWeight: 500 }}>{lbl}</div><div style={{ fontSize: 12, color: C.textLight, marginTop: 2 }}>{sub}</div></div>
-                  <Toggle defaultOn={on} />
+          {settingsTab === "calendar" && (() => {
+            const calConnected = !!localStorage.getItem("user_token");
+            return (
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Google 캘린더 연동</div>
+                {calConnected ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: C.greenBg, borderRadius: 10, marginBottom: 16 }}>
+                    <span style={{ fontSize: 20 }}>✅</span>
+                    <div><div style={{ fontSize: 13, fontWeight: 600, color: C.green }}>연동 완료</div><div style={{ fontSize: 12, color: C.textLight }}>{user.email || "Google 계정"}</div></div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: C.bg, borderRadius: 10, marginBottom: 16 }}>
+                    <span style={{ fontSize: 20 }}>📅</span>
+                    <div><div style={{ fontSize: 13, fontWeight: 600, color: C.textMid }}>미연동</div><div style={{ fontSize: 12, color: C.textLight }}>Google 로그인 시 캘린더가 자동 연결됩니다.</div></div>
+                  </div>
+                )}
+                <div style={{ fontSize: 13, color: C.textMid, lineHeight: 1.7, padding: "8px 0" }}>
+                  · 문서 분석이 완료되면 일정이 Google 캘린더에 <b>자동 등록</b>됩니다.<br />
+                  · 각 일정에 마감 <b>D-7 · D-3 · D-1 리마인더</b>가 함께 설정됩니다.<br />
+                  · 분석 결과 화면에서 <b>"캘린더에 다시 등록"</b>으로 재등록할 수 있습니다.
                 </div>
-              ))}
-              <button style={{ ...S.btnOutline, marginTop: 16 }}>연동 해제 후 재연동</button>
-            </div>
-          )}
+                {calConnected && (
+                  <button onClick={() => { localStorage.removeItem("user_token"); window.location.reload(); }} style={{ ...S.btnOutline, marginTop: 16, color: C.red, borderColor: C.red }}>캘린더 연결 해제</button>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
