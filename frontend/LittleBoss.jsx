@@ -709,8 +709,9 @@ function Dashboard({ onNavTo }) {
     .filter(d => d.status === "done" && d.deadlineDate && !ddayInfo(d.deadlineDate).isPast)
     .map(d => ({ ...d, _days: ddayInfo(d.deadlineDate).days ?? 99999 }))
     .sort((a, b) => a._days - b._days)[0] || null;
-  const [month, setMonth] = useState(3);
-  const [year, setYear] = useState(2026);
+  const _today = new Date();
+  const [month, setMonth] = useState(_today.getMonth() + 1);
+  const [year, setYear] = useState(_today.getFullYear());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showDocFilter, setShowDocFilter] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(null);
@@ -835,8 +836,9 @@ function Dashboard({ onNavTo }) {
               const colorMap = { ongoing: "#EA580C", completed: C.green, incomplete: C.textLight };
               const bgColorMap = { ongoing: "#FFF7ED", completed: C.greenBg, incomplete: "#E5E7EB" };
               const st = ev?.status;
+              const isToday = d && year === _today.getFullYear() && month === _today.getMonth() + 1 && d === _today.getDate();
               return (
-                <div key={i} title={ev ? ev.title : ""} onClick={() => ev && onNavTo("schedule-detail", ev.title)} style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: st ? colorMap[st] : C.textMid, fontWeight: st ? 600 : 400, width: 24, height: 24, borderRadius: "50%", background: st ? bgColorMap[st] : "transparent", margin: "0 auto", cursor: st ? "pointer" : "default" }}>
+                <div key={i} title={ev ? ev.title : ""} onClick={() => ev && onNavTo("schedule-detail", ev.title)} style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: st ? colorMap[st] : isToday ? "#0066CC" : C.textMid, fontWeight: st || isToday ? 600 : 400, width: 24, height: 24, borderRadius: "50%", background: st ? bgColorMap[st] : (isToday ? "#E0F2FE" : "transparent"), margin: "0 auto", cursor: st ? "pointer" : "default" }}>
                   {d}
                 </div>
               );
