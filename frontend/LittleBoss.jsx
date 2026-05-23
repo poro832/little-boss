@@ -474,6 +474,17 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
   const [dd, setDd] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const [dismissed, setDismissed] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("dismissed_notifs") || "[]"); } catch { return []; }
+  });
+  const dismissNotif = (key, e) => {
+    e.stopPropagation();
+    setDismissed(prev => {
+      const next = [...new Set([...prev, key])];
+      localStorage.setItem("dismissed_notifs", JSON.stringify(next));
+      return next;
+    });
+  };
   const user = getUser();
 
   useEffect(() => {
@@ -510,7 +521,7 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
     .forEach(({ d, dd }) => {
       const incomplete = d.checks.filter(c => !c.done).length;
       notificationsRaw.push({
-        id: nid++, type: "highlight", pinned: dd.days <= 3, icon: "📄",
+        id: nid++, key: `deadline:${d.doc_id}`, type: "highlight", pinned: dd.days <= 3, icon: "📄",
         title: d.title,
         message: incomplete > 0 ? `마감 ${dd.text} · 미완료 서류 ${incomplete}건` : `마감 ${dd.text} · 서류 준비 완료`,
         time: dd.text,
@@ -521,15 +532,17 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
   // 최근 분석 완료 문서 알림 (최대 3개)
   notifDocs.filter(d => d.status === "done").slice(0, 3).forEach(d => {
     notificationsRaw.push({
-      id: nid++, title: d.title, message: "문서 분석이 완료되었습니다", time: d.upload, icon: "✅",
+      id: nid++, key: `analysis:${d.doc_id}`, title: d.title, message: "문서 분석이 완료되었습니다", time: d.upload, icon: "✅",
       kind: "analysis",
       doc: d,
     });
   });
-  if (notificationsRaw.length === 0) {
-    notificationsRaw.push({ id: 0, title: "알림 없음", message: "새로운 알림이 없습니다", time: "", icon: "🔔", kind: "empty" });
+  // dismiss(닫기)된 알림 제외
+  let visibleNotifs = notificationsRaw.filter(n => !dismissed.includes(n.key));
+  if (visibleNotifs.length === 0) {
+    visibleNotifs = [{ id: 0, title: "알림 없음", message: "새로운 알림이 없습니다", time: "", icon: "🔔", kind: "empty" }];
   }
-  const notifications = [...notificationsRaw.filter(n => n.pinned), ...notificationsRaw.filter(n => !n.pinned)];
+  const notifications = [...visibleNotifs.filter(n => n.pinned), ...visibleNotifs.filter(n => !n.pinned)];
   useEffect(() => {
     const h = () => { setDd(false); setNotifOpen(false); };
     document.addEventListener("click", h);
@@ -582,7 +595,7 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
                       };
                       const clickable = notif.kind === "deadline" || notif.kind === "analysis";
                       return (
-                        <div key={notif.id} onClick={clickable ? handleNotifClick : undefined} style={{ padding: "12px 14px", borderBottom: `1px solid ${C.purpleBorder}`, cursor: clickable ? "pointer" : "default", transition: "background 0.2s", background: bgColor, hover: { background: bgColor } }}>
+                        <div key={notif.id} onClick={clickable ? handleNotifClick : undefined} style={{ padding: "12px 14px", borderBottom: `1px solid ${C.purpleBorder}`, cursor: clickable ? "pointer" : "default", transition: "background 0.2s", background: bgColor }}>
                           <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                             {notif.pinned && notif.type === "highlight" && <span style={{ fontSize: 16, flexShrink: 0, marginRight: -2 }}>📌</span>}
                             <span style={{ fontSize: 18 }}>{notif.icon}</span>
@@ -591,6 +604,9 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
                               <div style={{ fontSize: 11, color: messageColor, marginBottom: 4, lineHeight: 1.3 }}>{notif.message}</div>
                               <div style={{ fontSize: 10, color: C.textLight }}>{notif.time}</div>
                             </div>
+                            {notif.kind !== "empty" && (
+                              <button onClick={(e) => dismissNotif(notif.key, e)} title="알림 닫기" style={{ background: "none", border: "none", cursor: "pointer", color: C.textLight, fontSize: 15, lineHeight: 1, padding: "0 2px", flexShrink: 0 }}>✕</button>
+                            )}
                           </div>
                         </div>
                       );
