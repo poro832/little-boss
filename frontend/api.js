@@ -22,6 +22,9 @@ export const uploadFile = (file, userId) => {
 // 문서 상태/분석결과 조회 (폴링용)
 export const getDocument = (docId) => api.get(`/documents/${docId}`);
 
+// 문서 삭제
+export const deleteDocument = (docId) => api.delete(`/documents/${docId}`);
+
 // 사용자 문서 목록
 export const listDocuments = (userId) =>
   api.get("/documents", { params: { user_id: userId } });

@@ -9,7 +9,7 @@ import base64
 import cgi
 import io
 from models.document import Document
-from utils.storage import save_file, save_document, get_document, list_documents
+from utils.storage import save_file, save_document, get_document, list_documents, delete_document
 import dataclasses
 
 
@@ -46,6 +46,14 @@ def handle(event, context=None):
         if not doc:
             return _response(404, {'success': False, 'message': '문서를 찾을 수 없습니다.'})
         return _response(200, {'success': True, 'document': doc})
+
+    if method == 'DELETE' and '/documents/' in path:
+        doc_id = path_params.get('doc_id', '')
+        try:
+            delete_document(doc_id)
+            return _response(200, {'success': True, 'message': '문서가 삭제되었습니다.'})
+        except Exception as e:
+            return _response(500, {'success': False, 'message': f'삭제 실패: {str(e)}'})
 
     if method == 'POST' and path == '/upload':
         return _handle_upload(event)

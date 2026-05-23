@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 import logo from "./logo.svg";
-import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem, deadlinesForMonth, signup as apiSignup, emailLogin as apiEmailLogin } from "./api";
+import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem, deadlinesForMonth, signup as apiSignup, emailLogin as apiEmailLogin, deleteDocument } from "./api";
 
 
 // ── Color tokens ──
@@ -1278,8 +1278,23 @@ function CheckItem({ label, defaultChecked }) {
 }
 
 function OngoingPage({ onNavTo }) {
-  const { docs, loading, error } = useDocuments();
+  const { docs, loading, error, reload } = useDocuments();
   const [checkState, setCheckState] = useState({}); // `${docId}::${name}` -> bool (낙관적 오버라이드)
+  const [deletingId, setDeletingId] = useState(null);
+
+  const handleDelete = async (e, docId, title) => {
+    e.stopPropagation();
+    if (!window.confirm(`'${title}' 문서를 삭제할까요? (복구 불가)`)) return;
+    setDeletingId(docId);
+    try {
+      await deleteDocument(docId);
+      reload?.();
+    } catch (err) {
+      alert("삭제 실패: " + (err.response?.data?.message || err.message));
+    } finally {
+      setDeletingId(null);
+    }
+  };
   // 진행 중 = 분석 완료(done) & 마감 안 지남
   const ongoing = docs.filter(d => {
     if (d.status !== "done") return d.status !== "error"; // 처리중 문서도 표시
@@ -1326,10 +1341,11 @@ function OngoingPage({ onNavTo }) {
                   <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: C.text }}>{doc.title}</div>
                   <div style={{ fontSize: 12, color: C.textLight }}>📎 업로드: {doc.upload} · {processing ? "분석 중..." : "분석 완료"}</div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 20, background: dd.days !== null && dd.days <= 3 ? C.redBg : C.purpleBg, color: dd.days !== null && dd.days <= 3 ? C.red : C.purple }}>
                     {doc.deadlineDate ? `마감 ${doc.deadlineDate} · ${dd.text}` : "마감일 없음"}
                   </span>
+                  <button onClick={(e) => handleDelete(e, doc.doc_id, doc.title)} disabled={deletingId === doc.doc_id} title="삭제" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, opacity: deletingId === doc.doc_id ? 0.4 : 0.6, padding: 2 }}>🗑️</button>
                   <span style={{ fontSize: 20, color: C.textLight, fontWeight: 300 }}>›</span>
                 </div>
               </div>
@@ -1360,11 +1376,12 @@ function OngoingPage({ onNavTo }) {
 }
 
 function ExpiredPage({ onNavTo }) {
-  const { docs: allDocs, loading, error } = useDocuments();
-  const [hidden, setHidden] = useState([]); // 화면에서 숨긴 doc_id (삭제 API 없음)
+  const { docs: allDocs, loading, error, reload } = useDocuments();
+  const [hidden, setHidden] = useState([]);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // 마감 지난 문서만
   const docs = allDocs.filter(d => {
@@ -1378,12 +1395,22 @@ function ExpiredPage({ onNavTo }) {
     setShowDeleteConfirm(true);
   };
 
-  const handleDeleteConfirm = () => {
-    setShowDeleteConfirm(false);
-    setHidden(prev => [...prev, deleteTarget]);
-    setShowDeleteSuccess(true);
-    setTimeout(() => setShowDeleteSuccess(false), 2000);
-    setDeleteTarget(null);
+  const handleDeleteConfirm = async () => {
+    setDeleting(true);
+    try {
+      await deleteDocument(deleteTarget);
+      setHidden(prev => [...prev, deleteTarget]); // 즉시 숨김
+      setShowDeleteConfirm(false);
+      setShowDeleteSuccess(true);
+      setTimeout(() => setShowDeleteSuccess(false), 2000);
+      reload?.(); // 서버 목록 갱신
+    } catch (e) {
+      alert("삭제 실패: " + (e.response?.data?.message || e.message));
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
   };
 
   const handleDeleteCancel = () => {
@@ -1441,10 +1468,10 @@ function ExpiredPage({ onNavTo }) {
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
           <div style={{ background: "white", borderRadius: 14, padding: 28, textAlign: "center", maxWidth: 320, boxShadow: "0 20px 48px rgba(0,0,0,0.2)" }}>
             <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>삭제하시겠습니까?</div>
-            <div style={{ fontSize: 13, color: C.textLight, marginBottom: 24 }}>선택한 문서를 목록에서 삭제합니다</div>
+            <div style={{ fontSize: 13, color: C.textLight, marginBottom: 24 }}>선택한 문서를 영구 삭제합니다 (복구 불가)</div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <button onClick={handleDeleteCancel} style={{ ...S.btnOutline, fontSize: 13 }}>아니오</button>
-              <button onClick={handleDeleteConfirm} style={{ ...S.btnPrimary, fontSize: 13 }}>예</button>
+              <button onClick={handleDeleteCancel} disabled={deleting} style={{ ...S.btnOutline, fontSize: 13 }}>아니오</button>
+              <button onClick={handleDeleteConfirm} disabled={deleting} style={{ ...S.btnPrimary, fontSize: 13, opacity: deleting ? 0.6 : 1 }}>{deleting ? "삭제 중..." : "예"}</button>
             </div>
           </div>
         </div>

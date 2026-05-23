@@ -44,6 +44,37 @@ def get_file(file_path: str) -> bytes:
     return obj['Body'].read()
 
 
+def delete_document(doc_id: str) -> bool:
+    """문서 삭제: 메타데이터(DynamoDB) + 업로드 파일·OCR 결과(S3)"""
+    if ENV == "local":
+        path = LOCAL_DB_PATH / f"{doc_id}.json"
+        if path.exists():
+            path.unlink()
+        return True
+
+    import boto3
+    bucket = os.getenv('S3_BUCKET')
+    doc = get_document(doc_id)
+
+    # S3 파일 삭제 (업로드 원본 + ocr-results 마커)
+    s3 = boto3.client('s3')
+    keys = []
+    if doc and doc.get('file_path'):
+        keys.append(doc['file_path'])
+    keys.append(f"ocr-results/{doc_id}.json")
+    for k in keys:
+        try:
+            s3.delete_object(Bucket=bucket, Key=k)
+        except Exception as e:
+            print(f"S3 삭제 경고 ({k}): {e}")
+
+    # DynamoDB 레코드 삭제
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table(os.getenv('DOCUMENTS_TABLE', 'sgu-pj-03-documents'))
+    table.delete_item(Key={'doc_id': doc_id})
+    return True
+
+
 def get_user(user_id: str) -> dict:
     """사용자 조회 (이메일/비밀번호 인증). 없으면 None"""
     if ENV == "local":
