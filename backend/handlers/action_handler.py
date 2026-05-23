@@ -144,13 +144,31 @@ def handle_checklist_update(doc_id: str, item_name: str, completed: bool) -> dic
     if not doc:
         return {"success": False, "message": f"문서를 찾을 수 없습니다: {doc_id}"}
 
-    checklist = doc.get("checklist", [])
+    # checklist 미초기화 시 분석 결과(required_documents)에서 생성
+    checklist = doc.get("checklist")
+    if not checklist:
+        required_docs = (doc.get("analysis") or {}).get("required_documents", [])
+        checklist = [
+            {"name": d.get("name", ""), "description": d.get("description", ""),
+             "completed": bool(d.get("have", False))}
+            for d in required_docs
+        ]
+
+    found = False
     for item in checklist:
         if item["name"] == item_name:
             item["completed"] = completed
+            found = True
             break
+    if not found:
+        return {"success": False, "message": f"체크리스트 항목을 찾을 수 없습니다: {item_name}"}
 
     doc["checklist"] = checklist
     save_document(doc_id, doc)
-
-    return {"success": True, "message": f"'{item_name}' 상태 업데이트 완료"}
+    return {
+        "success": True,
+        "message": f"'{item_name}' 상태 업데이트 완료",
+        "checklist": checklist,
+        "total": len(checklist),
+        "completed": sum(1 for i in checklist if i["completed"]),
+    }

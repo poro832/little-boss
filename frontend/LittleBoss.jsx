@@ -1254,12 +1254,26 @@ function CheckItem({ label, defaultChecked }) {
 
 function OngoingPage({ onNavTo }) {
   const { docs, loading, error } = useDocuments();
+  const [checkState, setCheckState] = useState({}); // `${docId}::${name}` -> bool (낙관적 오버라이드)
   // 진행 중 = 분석 완료(done) & 마감 안 지남
   const ongoing = docs.filter(d => {
     if (d.status !== "done") return d.status !== "error"; // 처리중 문서도 표시
     const dd = ddayInfo(d.deadlineDate);
     return !dd.isPast;
   });
+
+  const toggleCheck = async (docId, name, current) => {
+    const key = `${docId}::${name}`;
+    const next = !current;
+    setCheckState(s => ({ ...s, [key]: next })); // 즉시 반영
+    try {
+      const { data } = await updateChecklistItem(docId, name, next);
+      if (!data.success) throw new Error(data.message || "저장 실패");
+    } catch (e) {
+      setCheckState(s => ({ ...s, [key]: current })); // 롤백
+      alert("체크리스트 저장 실패: " + (e.response?.data?.message || e.message));
+    }
+  };
 
   return (
     <div>
@@ -1272,7 +1286,11 @@ function OngoingPage({ onNavTo }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {ongoing.map(doc => {
           const dd = ddayInfo(doc.deadlineDate);
-          const doneCount = doc.checks.filter(c => c.done).length;
+          const checks = doc.checks.map(c => {
+            const key = `${doc.doc_id}::${c.l}`;
+            return { ...c, done: key in checkState ? checkState[key] : c.done };
+          });
+          const doneCount = checks.filter(c => c.done).length;
           const percentage = doc.total ? (doneCount / doc.total) * 100 : 0;
           const processing = doc.status !== "done";
 
@@ -1295,11 +1313,11 @@ function OngoingPage({ onNavTo }) {
               ) : (
                 <>
                   <div style={{ display: "flex", flexDirection: "column", gap: 7, marginTop: 12 }}>
-                    {doc.checks.map((c, idx) => (
-                      <div key={idx} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: C.textMid }}>
-                        <input type="checkbox" checked={c.done} disabled style={{ accentColor: C.purple, width: 15, height: 15, cursor: "not-allowed", opacity: 0.6 }} />
-                        <span>{c.l}</span>
-                      </div>
+                    {checks.map((c, idx) => (
+                      <label key={idx} onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: C.textMid, cursor: "pointer" }}>
+                        <input type="checkbox" checked={c.done} onChange={() => toggleCheck(doc.doc_id, c.l, c.done)} style={{ accentColor: C.purple, width: 15, height: 15, cursor: "pointer" }} />
+                        <span style={{ textDecoration: c.done ? "line-through" : "none", opacity: c.done ? 0.55 : 1 }}>{c.l}</span>
+                      </label>
                     ))}
                   </div>
                   <div style={{ height: 5, background: "#EDE9FF", borderRadius: 3, marginTop: 14 }}><div style={{ height: "100%", borderRadius: 3, background: C.purple, width: percentage+"%" }} /></div>
