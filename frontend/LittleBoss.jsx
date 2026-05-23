@@ -20,14 +20,34 @@ const C = {
   redBg: "#FFF0F0",
   green: "#22C55E",
   greenBg: "#F0FFF4",
+  ongoing: "#EA580C",
+  ongoingBg: "#FFF7ED",
+  border: "#E8E4F4",
+  todayText: "#0066CC",
+  todayBg: "#E0F2FE",
+};
+
+// ── 문서 상태 → 라벨·색 (전 화면 공통) ──
+const STATUS = {
+  "진행 중": { color: C.ongoing, bg: C.ongoingBg },
+  "완료": { color: C.green, bg: C.greenBg },
+  "미완료": { color: C.red, bg: C.redBg },
+};
+// 시간대별 인사말
+const greeting = () => {
+  const h = new Date().getHours();
+  if (h < 6) return "늦은 시간이네요";
+  if (h < 12) return "좋은 아침입니다";
+  if (h < 18) return "좋은 오후입니다";
+  return "좋은 저녁입니다";
 };
 
 // ── Shared styles ──
 const S = {
   card: { background: C.white, borderRadius: 14, padding: 22, boxShadow: "0 1px 8px rgba(107,79,232,0.07)" },
   btnPrimary: { background: C.purple, color: "white", border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7, whiteSpace: "nowrap" },
-  btnOutline: { background: "white", color: C.textMid, border: `1.5px solid #E8E4F4`, borderRadius: 10, padding: "9px 18px", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7 },
-  formInput: { width: "100%", padding: "12px 14px", border: "1.5px solid #E8E4F4", borderRadius: 10, fontSize: 14, fontFamily: "inherit", outline: "none", background: C.white, color: C.text, boxSizing: "border-box" },
+  btnOutline: { background: "white", color: C.textMid, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: "9px 18px", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7 },
+  formInput: { width: "100%", padding: "12px 14px", border: "1.5px solid " + C.border, borderRadius: 10, fontSize: 14, fontFamily: "inherit", outline: "none", background: C.white, color: C.text, boxSizing: "border-box" },
   label: { fontSize: 13, fontWeight: 600, color: C.textMid, display: "block", marginBottom: 6 },
 };
 
@@ -218,7 +238,7 @@ function GoogleBtn({ label, onLogin, onClick }) {
 
   const handleClick = onLogin ? () => login() : onClick;
   return (
-    <button onClick={handleClick} style={{ width: "100%", padding: 13, borderRadius: 10, fontSize: 14, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", background: "white", border: "1.5px solid #E8E4F4", color: C.text, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 14 }}>
+    <button onClick={handleClick} style={{ width: "100%", padding: 13, borderRadius: 10, fontSize: 14, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", background: "white", border: "1.5px solid " + C.border, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 14 }}>
       <GoogleIcon /> {label}
     </button>
   );
@@ -227,7 +247,7 @@ function GoogleBtn({ label, onLogin, onClick }) {
 function DividerOr() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, color: C.textLight, fontSize: 13, margin: "18px 0" }}>
-      <div style={{ flex: 1, height: 1, background: "#E8E4F4" }} /> 또는 이메일로 <div style={{ flex: 1, height: 1, background: "#E8E4F4" }} />
+      <div style={{ flex: 1, height: 1, background: C.border }} /> 또는 이메일로 <div style={{ flex: 1, height: 1, background: C.border }} />
     </div>
   );
 }
@@ -693,8 +713,8 @@ function Dashboard({ onNavTo }) {
         name: d.filename || d.title,
         date: `${d.upload}${d.deadlineDate ? ` · 마감 ${dd.text}` : ""}`,
         status,
-        color: status === "완료" ? C.green : status === "미완료" ? C.red : C.purple,
-        bg: status === "완료" ? C.greenBg : status === "미완료" ? C.redBg : C.purpleBg,
+        color: STATUS[status].color,
+        bg: STATUS[status].bg,
         title: d.title,
         deadline: d.deadlineDate || "마감일 없음",
         ago: dd.text,
@@ -716,6 +736,14 @@ function Dashboard({ onNavTo }) {
   const [showDocFilter, setShowDocFilter] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [hoverDetailList, setHoverDetailList] = useState(false);
+  const [search, setSearch] = useState("");
+  const [hoverMonth, setHoverMonth] = useState(false);
+
+  // 최근 문서: 검색어(문서명) + 상태 필터 적용
+  const filteredDocs = recentDocs.filter(
+    d => (!search.trim() || d.name.toLowerCase().includes(search.trim().toLowerCase()))
+      && (!selectedStatus || d.status === selectedStatus)
+  );
 
   const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
   const getDaysInMonth = (y, m) => new Date(y, m, 0).getDate();
@@ -741,12 +769,12 @@ function Dashboard({ onNavTo }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
-        <div><div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>좋은 아침입니다, {getUser().name}님 👋</div><div style={{ fontSize: 14, color: C.textLight }}>오늘 처리해야 할 행정 문서와 일정을 확인하세요.</div></div>
+        <div><div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>{greeting()}, {getUser().name}님 👋</div><div style={{ fontSize: 14, color: C.textLight }}>오늘 처리해야 할 행정 문서와 일정을 확인하세요.</div></div>
         <button style={S.btnPrimary} onClick={() => onNavTo("sub-upload")}>📎 새 문서 업로드</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         {/* Left card */}
-        <div style={{...S.card, cursor: urgentDoc ? 'pointer' : 'default', transition: 'all 0.2s'}} onClick={() => urgentDoc && onNavTo('schedule-detail', urgentDoc.title)} onMouseEnter={(e) => { if (urgentDoc) e.currentTarget.style.boxShadow = '0 12px 32px rgba(107,79,232,0.15)'; }} onMouseLeave={(e) => e.currentTarget.style.boxShadow = S.card.boxShadow}>
+        <div role={urgentDoc ? "button" : undefined} tabIndex={urgentDoc ? 0 : undefined} aria-label={urgentDoc ? `${urgentDoc.title} 상세 보기` : undefined} onKeyDown={(e) => { if (urgentDoc && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onNavTo('schedule-detail', urgentDoc.title); } }} style={{...S.card, cursor: urgentDoc ? 'pointer' : 'default', transition: 'all 0.2s'}} onClick={() => urgentDoc && onNavTo('schedule-detail', urgentDoc.title)} onMouseEnter={(e) => { if (urgentDoc) e.currentTarget.style.boxShadow = '0 12px 32px rgba(107,79,232,0.15)'; }} onMouseLeave={(e) => e.currentTarget.style.boxShadow = S.card.boxShadow}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>마감 임박 문서</div>
           {!urgentDoc ? (
             <div style={{ fontSize: 13, color: C.textLight, padding: "30px 0", textAlign: "center" }}>마감 임박 문서가 없습니다.</div>
@@ -787,16 +815,20 @@ function Dashboard({ onNavTo }) {
           })()}
         </div>
         {/* Calendar card */}
-        <div style={S.card}>
+        <div style={{ ...S.card, display: "flex", flexDirection: "column" }}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>다가오는 일정</div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, position: "relative" }}>
-            <div onClick={() => setShowDatePicker(!showDatePicker)} style={{ fontSize: 15, fontWeight: 700, cursor: "pointer", padding: "6px 12px", borderRadius: 8, hover: { background: C.bg } }}>
-              {year}년 {monthNames[month - 1]}
+            <div role="button" tabIndex={0} aria-label="연·월 선택" aria-expanded={showDatePicker}
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowDatePicker(!showDatePicker); } }}
+              onMouseEnter={() => setHoverMonth(true)} onMouseLeave={() => setHoverMonth(false)}
+              style={{ fontSize: 15, fontWeight: 700, cursor: "pointer", padding: "6px 12px", borderRadius: 8, background: (hoverMonth || showDatePicker) ? C.bg : "transparent", transition: "background 0.15s" }}>
+              {year}년 {monthNames[month - 1]} ▾
             </div>
             {/* 범례 */}
             <div style={{ display: "flex", gap: 14, fontSize: 11, flex: 1, justifyContent: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#EA580C" }}></div>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.ongoing }}></div>
                 <span style={{ color: C.textLight }}>진행중</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -804,26 +836,26 @@ function Dashboard({ onNavTo }) {
                 <span style={{ color: C.textLight }}>완료</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.textLight }}></div>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.red }}></div>
                 <span style={{ color: C.textLight }}>미완료</span>
               </div>
             </div>
             <div style={{ display: "flex", gap: 6 }}>
-              <button onClick={handlePrevMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid #E8E4F4", background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>‹</button>
-              <button onClick={handleNextMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid #E8E4F4", background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>›</button>
+              <button onClick={handlePrevMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid " + C.border, background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>‹</button>
+              <button onClick={handleNextMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid " + C.border, background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>›</button>
             </div>
             {showDatePicker && (
               <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, background: "white", borderRadius: 12, padding: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 10, minWidth: 240 }}>
                 <div style={{ marginBottom: 12, fontWeight: 700, fontSize: 13 }}>연도 선택</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 16 }}>
                   {[2024,2025,2026,2027,2028,2029,2030,2031].map(y => (
-                    <button key={y} onClick={() => { setYear(y); }} style={{ padding: "8px 0", borderRadius: 6, border: y===year ? "2px solid " + C.purple : "1.5px solid #E8E4F4", background: y===year ? C.purpleBg : "white", color: y===year ? C.purple : C.textMid, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>{y}</button>
+                    <button key={y} onClick={() => { setYear(y); }} style={{ padding: "8px 0", borderRadius: 6, border: y===year ? "2px solid " + C.purple : "1.5px solid " + C.border, background: y===year ? C.purpleBg : "white", color: y===year ? C.purple : C.textMid, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>{y}</button>
                   ))}
                 </div>
                 <div style={{ marginBottom: 12, fontWeight: 700, fontSize: 13 }}>월 선택</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
                   {monthNames.map((m, i) => (
-                    <button key={i} onClick={() => { setMonth(i+1); setShowDatePicker(false); }} style={{ padding: "8px 0", borderRadius: 6, border: (i+1)===month ? "2px solid " + C.purple : "1.5px solid #E8E4F4", background: (i+1)===month ? C.purpleBg : "white", color: (i+1)===month ? C.purple : C.textMid, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>{m}</button>
+                    <button key={i} onClick={() => { setMonth(i+1); setShowDatePicker(false); }} style={{ padding: "8px 0", borderRadius: 6, border: (i+1)===month ? "2px solid " + C.purple : "1.5px solid " + C.border, background: (i+1)===month ? C.purpleBg : "white", color: (i+1)===month ? C.purple : C.textMid, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>{m}</button>
                   ))}
                 </div>
               </div>
@@ -833,19 +865,22 @@ function Dashboard({ onNavTo }) {
             {["일","월","화","수","목","금","토"].map(d => <div key={d} style={{ fontSize: 10, color: C.textLight, paddingBottom: 6 }}>{d}</div>)}
             {calendarDays.map((d, i) => {
               const ev = d ? monthEvents[d] : null;
-              const colorMap = { ongoing: "#EA580C", completed: C.green, incomplete: C.textLight };
-              const bgColorMap = { ongoing: "#FFF7ED", completed: C.greenBg, incomplete: "#E5E7EB" };
+              const colorMap = { ongoing: C.ongoing, completed: C.green, incomplete: C.red };
+              const bgColorMap = { ongoing: C.ongoingBg, completed: C.greenBg, incomplete: C.redBg };
               const st = ev?.status;
               const isToday = d && year === _today.getFullYear() && month === _today.getMonth() + 1 && d === _today.getDate();
               return (
-                <div key={i} title={ev ? ev.title : ""} onClick={() => ev && onNavTo("schedule-detail", ev.title)} style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: st ? colorMap[st] : isToday ? "#0066CC" : C.textMid, fontWeight: st || isToday ? 600 : 400, width: 24, height: 24, borderRadius: "50%", background: st ? bgColorMap[st] : (isToday ? "#E0F2FE" : "transparent"), margin: "0 auto", cursor: st ? "pointer" : "default" }}>
+                <div key={i} title={ev ? ev.title : ""} role={ev ? "button" : undefined} tabIndex={ev ? 0 : undefined}
+                  onClick={() => ev && onNavTo("schedule-detail", ev.title)}
+                  onKeyDown={(e) => { if (ev && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onNavTo("schedule-detail", ev.title); } }}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: st ? colorMap[st] : isToday ? C.todayText : C.textMid, fontWeight: st || isToday ? 600 : 400, width: 24, height: 24, borderRadius: "50%", background: st ? bgColorMap[st] : (isToday ? C.todayBg : "transparent"), margin: "0 auto", cursor: st ? "pointer" : "default" }}>
                   {d}
                 </div>
               );
             })}
           </div>
-          <div style={{ textAlign: "center", marginTop: 32 }}>
-            <span onClick={() => onNavTo("sub-schedule")} onMouseEnter={() => setHoverDetailList(true)} onMouseLeave={() => setHoverDetailList(false)} style={{ fontSize: 12, color: C.purple, cursor: "pointer", fontWeight: 600, transform: hoverDetailList ? "scale(1.15)" : "scale(1)", transition: "transform 0.2s ease-in-out", display: "inline-block" }}>상세 목록 보기</span>
+          <div style={{ textAlign: "center", marginTop: "auto", paddingTop: 20 }}>
+            <span role="button" tabIndex={0} onClick={() => onNavTo("sub-schedule")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavTo("sub-schedule"); } }} onMouseEnter={() => setHoverDetailList(true)} onMouseLeave={() => setHoverDetailList(false)} style={{ fontSize: 12, color: C.purple, cursor: "pointer", fontWeight: 600, transform: hoverDetailList ? "scale(1.15)" : "scale(1)", transition: "transform 0.2s ease-in-out", display: "inline-block" }}>상세 목록 보기</span>
           </div>
         </div>
       </div>
@@ -854,15 +889,14 @@ function Dashboard({ onNavTo }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div style={{ fontSize: 14, fontWeight: 700 }}>최근 분석된 문서</div>
           <div style={{ display: "flex", gap: 8, position: "relative" }}>
-            <input style={{ padding: "7px 12px", border: "1.5px solid #E8E4F4", borderRadius: 8, fontSize: 12, outline: "none", fontFamily: "inherit", width: 160 }} placeholder="문서명 검색" />
-            <button style={{ ...S.btnPrimary, fontSize: 12, padding: "7px 14px" }}>검색</button>
-            <button onClick={() => setShowDocFilter(!showDocFilter)} style={{ ...S.btnOutline, fontSize: 12, padding: "7px 14px" }}>필터</button>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} style={{ padding: "7px 12px", border: "1.5px solid " + C.border, borderRadius: 8, fontSize: 12, outline: "none", fontFamily: "inherit", width: 180 }} placeholder="🔍 문서명 검색" />
+            <button onClick={() => setShowDocFilter(!showDocFilter)} style={{ ...(selectedStatus ? S.btnPrimary : S.btnOutline), fontSize: 12, padding: "7px 14px" }}>필터{selectedStatus ? ` · ${selectedStatus}` : ""}</button>
             {showDocFilter && (
               <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "white", borderRadius: 12, padding: 16, boxShadow: "0 8px 32px rgba(0,0,0,0.12)", zIndex: 20, minWidth: 240 }}>
                 <div style={{ marginBottom: 12, fontWeight: 700, fontSize: 13 }}>상태별</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {[
-                    { label: "진행 중", value: "진행 중", color: C.purple },
+                    { label: "진행 중", value: "진행 중", color: C.ongoing },
                     { label: "완료", value: "완료", color: C.green },
                     { label: "미완료", value: "미완료", color: C.red }
                   ].map(status => (
@@ -881,16 +915,22 @@ function Dashboard({ onNavTo }) {
             )}
           </div>
         </div>
-        {recentDocs.length === 0 && (
-          <div style={{ textAlign: "center", color: C.textLight, fontSize: 13, padding: "20px 0" }}>아직 분석된 문서가 없습니다.</div>
+        {filteredDocs.length === 0 && (
+          <div style={{ textAlign: "center", color: C.textLight, fontSize: 13, padding: "20px 0" }}>
+            {recentDocs.length === 0 ? "아직 분석된 문서가 없습니다." : "조건에 맞는 문서가 없습니다."}
+          </div>
         )}
-        {recentDocs.map(doc => (
+        {filteredDocs.map(doc => (
           <div
             key={doc.name}
+            role="button"
+            tabIndex={0}
+            aria-label={`${doc.name} 상세 보기`}
             onClick={() => onNavTo("doc-detail", null, doc)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavTo("doc-detail", null, doc); } }}
             style={{
               background: "white",
-              border: "1px solid #E8E4F4",
+              border: "1px solid " + C.border,
               borderRadius: 10,
               padding: "14px 16px",
               display: "flex",
@@ -1217,8 +1257,8 @@ function SchedulePage({ onNavTo }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <span style={{ fontSize: 18, fontWeight: 700 }}>{calY}년 {calM}월</span>
           <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={prevMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid #E8E4F4", background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>‹</button>
-            <button onClick={nextMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid #E8E4F4", background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>›</button>
+            <button onClick={prevMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid " + C.border, background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>‹</button>
+            <button onClick={nextMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid " + C.border, background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>›</button>
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, textAlign: "center" }}>
