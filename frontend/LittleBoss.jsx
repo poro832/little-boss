@@ -23,6 +23,7 @@ const C = {
   ongoing: "#EA580C",
   ongoingBg: "#FFF7ED",
   border: "#E8E4F4",
+  track: "#EDE9FF",
   todayText: "#0066CC",
   todayBg: "#E0F2FE",
 };
@@ -801,7 +802,7 @@ function Dashboard({ onNavTo }) {
                 <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>준비물 달성률</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                   <svg width="64" height="64" viewBox="0 0 64 64">
-                    <circle cx="32" cy="32" r="26" fill="none" stroke="#EDE9FF" strokeWidth="6"/>
+                    <circle cx="32" cy="32" r="26" fill="none" stroke={C.track} strokeWidth="6"/>
                     <circle cx="32" cy="32" r="26" fill="none" stroke={C.purple} strokeWidth="6" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} transform="rotate(-90 32 32)"/>
                     <text x="32" y="32" textAnchor="middle" dominantBaseline="middle" fontSize="13" fontWeight="700" fill={C.purple}>{pct}%</text>
                   </svg>
@@ -1064,7 +1065,7 @@ function UploadPage({ onNavTo }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</div>
                   <div style={{ fontSize: 11, color: C.textLight, marginTop: 2 }}>{f.size}</div>
-                  <div style={{ height: 3, background: "#EDE9FF", borderRadius: 2, marginTop: 6 }}><div style={{ height: "100%", borderRadius: 2, background: C.purple, width: f.progress + "%", transition: "width .3s" }} /></div>
+                  <div style={{ height: 3, background: C.track, borderRadius: 2, marginTop: 6 }}><div style={{ height: "100%", borderRadius: 2, background: C.purple, width: f.progress + "%", transition: "width .3s" }} /></div>
                 </div>
                 <input type="checkbox" checked={checkedFiles[f.id] || false} onChange={(e) => { setCheckedFiles(prev => ({ ...prev, [f.id]: e.target.checked })); }} style={{ width: 18, height: 18, cursor: "pointer", accentColor: C.purple }} />
               </div>
@@ -1266,12 +1267,12 @@ function SchedulePage({ onNavTo }) {
           {grid.map((d, i) => {
             const ev = d ? monthEvents[d] : null;
             const today = d && isToday(d);
-            const bgColorMap = { incomplete: "#F5F5F5", ongoing: "#FFF7ED", completed: C.greenBg };
-            const colorMap = { incomplete: "#999", ongoing: "#EA580C", completed: C.green };
+            const bgColorMap = { incomplete: C.redBg, ongoing: C.ongoingBg, completed: C.greenBg };
+            const colorMap = { incomplete: C.red, ongoing: C.ongoing, completed: C.green };
             return (
               <div key={i} onClick={() => ev && onNavTo('schedule-detail', ev.title)} style={{ minHeight: 90, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", fontSize: 13, borderRadius: 8, cursor: ev ? "pointer" : "default", padding: 8,
-                color: today ? "#0066CC" : ev ? colorMap[ev.status] : C.textMid,
-                background: ev ? bgColorMap[ev.status] : (today ? "#E0F2FE" : "transparent"), fontWeight: (ev || today) ? 700 : 400, position: "relative", transition: "all 0.2s" }}
+                color: today ? C.todayText : ev ? colorMap[ev.status] : C.textMid,
+                background: ev ? bgColorMap[ev.status] : (today ? C.todayBg : "transparent"), fontWeight: (ev || today) ? 700 : 400, position: "relative", transition: "all 0.2s" }}
                 onMouseEnter={(e) => { if (ev) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)"; }}}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
                 <span style={{ fontSize: 12, fontWeight: 700 }}>{d || ""}</span>
@@ -1287,7 +1288,7 @@ function SchedulePage({ onNavTo }) {
         {/* 범례 */}
         <div style={{ display: "flex", gap: 20, padding: "12px 0", borderTop: `1px solid ${C.border}`, marginTop: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
-            <div style={{ width: 12, height: 12, borderRadius: 2, background: "#EA580C" }}></div>
+            <div style={{ width: 12, height: 12, borderRadius: 2, background: C.ongoing }}></div>
             <span style={{ color: C.textLight }}>진행중</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
@@ -1295,7 +1296,7 @@ function SchedulePage({ onNavTo }) {
             <span style={{ color: C.textLight }}>완료</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
-            <div style={{ width: 12, height: 12, borderRadius: 2, background: "#999" }}></div>
+            <div style={{ width: 12, height: 12, borderRadius: 2, background: C.red }}></div>
             <span style={{ color: C.textLight }}>미완료</span>
           </div>
         </div>
@@ -1419,7 +1420,7 @@ function OngoingPage({ onNavTo }) {
                       </label>
                     ))}
                   </div>
-                  <div style={{ height: 5, background: "#EDE9FF", borderRadius: 3, marginTop: 14 }}><div style={{ height: "100%", borderRadius: 3, background: C.purple, width: percentage+"%" }} /></div>
+                  <div style={{ height: 5, background: C.track, borderRadius: 3, marginTop: 14 }}><div style={{ height: "100%", borderRadius: 3, background: C.purple, width: percentage+"%" }} /></div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textLight, marginTop: 5 }}>
                     <span>서류 준비 현황</span><span style={{ color: C.purple, fontWeight: 600 }}>{doneCount} / {doc.total} 완료</span>
                   </div>
@@ -1688,118 +1689,6 @@ function ScheduleDetailPage({ day, title, prevSub, onNavTo }) {
   );
 }
 
-function NotificationAnnouncementPage({ onNavTo }) {
-  return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>📢 공지사항</div>
-          <div style={{ fontSize: 14, color: C.textLight }}>2026-03-19 기능 업데이트 사항</div>
-        </div>
-        <button onClick={() => onNavTo('sub-home')} style={{ ...S.btnOutline, fontSize: 12 }}>← 돌아가기</button>
-      </div>
-
-      <div style={{ ...S.card, marginBottom: 20 }}>
-        <div style={{ fontSize: 12, color: C.textLight, marginBottom: 16 }}>2026.03.30 · 공지</div>
-        <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>기능 업데이트 사항</div>
-
-        <div style={{ lineHeight: 1.8, color: C.textMid, fontSize: 13 }}>
-          <p style={{ marginBottom: 16 }}>LittleBoss 플랫폼의 새로운 기능 업데이트가 완료되었습니다. 더욱 향상된 사용자 경험을 제공하기 위해 여러 기능이 추가되고 개선되었습니다.</p>
-
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontWeight: 700, color: C.text, marginBottom: 8 }}>🎯 추가된 기능</div>
-            <div style={{ paddingLeft: 12, borderLeft: `2px solid ${C.purple}` }}>
-              <div>· 대시보드 알림 시스템 개선</div>
-              <div>· 문서 분석 결과 상세 보기 기능</div>
-              <div>· 일정 관리 캘린더 연동 기능</div>
-              <div>· 문서 업로드 진행도 표시</div>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontWeight: 700, color: C.text, marginBottom: 8 }}>⚡ 개선된 사항</div>
-            <div style={{ paddingLeft: 12, borderLeft: `2px solid ${C.purple}` }}>
-              <div>· UI/UX 디자인 개선으로 더 직관적인 인터페이스</div>
-              <div>· 알림 속도 및 정확도 향상</div>
-              <div>· 모바일 환경에서의 반응성 개선</div>
-              <div>· 보안 기능 강화</div>
-            </div>
-          </div>
-
-          <p style={{ marginBottom: 16 }}>업데이트 사항에 대한 문의가 있으시면 고객지원팀(support@littleboss.com)으로 연락 주시기 바랍니다.</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NotificationAnalysisPage({ onNavTo }) {
-  return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>✅ 문서 분석 완료</div>
-          <div style={{ fontSize: 14, color: C.textLight }}>업로드하신 문서 분석이 완료되었습니다</div>
-        </div>
-        <button onClick={() => onNavTo('sub-home')} style={{ ...S.btnOutline, fontSize: 12 }}>← 돌아가기</button>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
-        <div style={{ ...S.card }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>📄 분석된 문서</div>
-          <div style={{ background: C.purpleBg, borderRadius: 10, padding: 14, marginBottom: 14 }}>
-            <div style={{ fontSize: 12, color: C.purple, fontWeight: 600, marginBottom: 4 }}>문서명</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>국가장학금 신청 안내문</div>
-          </div>
-          <div style={{ background: C.purpleBg, borderRadius: 10, padding: 14 }}>
-            <div style={{ fontSize: 12, color: C.purple, fontWeight: 600, marginBottom: 4 }}>분석 완료 시간</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>2026.03.19 14:23</div>
-          </div>
-        </div>
-
-        <div style={{ ...S.card }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>🎯 분석 결과</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ padding: 12, background: C.greenBg, borderRadius: 8, borderLeft: `3px solid ${C.green}` }}>
-              <div style={{ fontSize: 12, color: C.green, fontWeight: 600, marginBottom: 4 }}>필수 서류</div>
-              <div style={{ fontSize: 12, color: C.textMid }}>5개 항목 중 3개 완료</div>
-            </div>
-            <div style={{ padding: 12, background: C.redBg, borderRadius: 8, borderLeft: `3px solid ${C.red}` }}>
-              <div style={{ fontSize: 12, color: C.red, fontWeight: 600, marginBottom: 4 }}>미완료 서류</div>
-              <div style={{ fontSize: 12, color: C.textMid }}>가족관계증명서, 재학증명서</div>
-            </div>
-            <div style={{ padding: 12, background: "#EDE9FF", borderRadius: 8, borderLeft: `3px solid ${C.purple}` }}>
-              <div style={{ fontSize: 12, color: C.purple, fontWeight: 600, marginBottom: 4 }}>권장사항</div>
-              <div style={{ fontSize: 12, color: C.textMid }}>빠른 제출을 권장합니다</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ ...S.card }}>
-        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>📋 상세 분석</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {[
-            { item: "소득분위 확인서", status: "완료", icon: "✅" },
-            { item: "가족관계증명서", status: "미제출", icon: "❌" },
-            { item: "재학증명서", status: "미제출", icon: "❌" },
-            { item: "주민등록등본", status: "완료", icon: "✅" },
-            { item: "신청서 작성", status: "완료", icon: "✅" }
-          ].map((item, idx) => (
-            <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: item.status === "완료" ? C.greenBg : C.redBg, borderRadius: 8, fontSize: 13 }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span>{item.icon}</span>
-                <span style={{ color: C.text, fontWeight: 500 }}>{item.item}</span>
-              </span>
-              <span style={{ color: item.status === "완료" ? C.green : C.red, fontWeight: 600, fontSize: 12 }}>{item.status}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function DocumentDetailPage({ data, prevSub, onNavTo }) {
   const [memo, setMemo] = useState("");
   const [checks, setChecks] = useState({});
@@ -1844,7 +1733,7 @@ function DocumentDetailPage({ data, prevSub, onNavTo }) {
   };
 
   const completedCount = Object.values(checks).filter(Boolean).length;
-  const statusColor = completedCount === data.total ? C.green : completedCount > 0 ? "#EA580C" : C.red;
+  const statusColor = completedCount === data.total ? C.green : completedCount > 0 ? C.ongoing : C.red;
 
   const handleSave = () => {
     const key = `documentDetail_${data.title}`;
@@ -2167,7 +2056,7 @@ function ProfilePage() {
                   <div style={{ fontSize: 12, color: C.textLight, marginBottom: 10 }}>{user.email}</div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => fileInputRef.current?.click()} style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, fontWeight: 600, cursor: "pointer", background: C.purpleBg, color: C.purple, border: "none", fontFamily: "inherit" }}>사진 변경</button>
-                    <button onClick={() => setProfileImage(null)} style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, fontWeight: 600, cursor: "pointer", background: "#F5F5F5", color: C.textMid, border: "none", fontFamily: "inherit" }}>삭제</button>
+                    <button onClick={() => setProfileImage(null)} style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, fontWeight: 600, cursor: "pointer", background: C.bg, color: C.textMid, border: "none", fontFamily: "inherit" }}>삭제</button>
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" onChange={handleImageChange} style={{ display: "none" }} />
                 </div>
@@ -2364,7 +2253,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { msg, show, toast } = useToast();
 
-  const titleMap = { "sub-home":"대시보드","sub-upload":"문서 업로드","sub-schedule":"일정 관리","sub-ongoing":"진행 중인 문서","sub-expired":"마감된 문서","sub-profile":"내 정보", "schedule-detail":"일정 상세", "doc-detail":"문서 상세", "notif-announcement":"공지사항", "notif-analysis":"문서 분석 결과" };
+  const titleMap = { "sub-home":"대시보드","sub-upload":"문서 업로드","sub-schedule":"일정 관리","sub-ongoing":"진행 중인 문서","sub-expired":"마감된 문서","sub-profile":"내 정보", "schedule-detail":"일정 상세", "doc-detail":"문서 상세" };
 
   const handleLogin = (m) => { setPage("app"); setSub("sub-home"); toast(m); };
   const handleLogout = () => { setPage("login"); toast("로그아웃됐어요"); };
@@ -2406,8 +2295,6 @@ export default function App() {
           {sub === "sub-ongoing" && <OngoingPage onNavTo={navTo} />}
           {sub === "sub-expired" && <ExpiredPage onNavTo={navTo} />}
           {sub === "doc-detail" && <DocumentDetailPage data={docDetailData} prevSub={prevSub} onNavTo={navTo} />}
-          {sub === "notif-announcement" && <NotificationAnnouncementPage onNavTo={navTo} />}
-          {sub === "notif-analysis" && <NotificationAnalysisPage onNavTo={navTo} />}
           {sub === "sub-profile" && <ProfilePage />}
         </main>
       </div>
