@@ -151,7 +151,8 @@ def _send_reset_email(to_email: str, code: str):
     """SES로 인증 코드 발송. SES_SENDER 미설정/로컬이면 로그로 대체."""
     sender = os.getenv("SES_SENDER")
     if not sender or os.getenv("ENV") == "local":
-        print(f"[비밀번호 재설정 코드] {to_email}: {code}")
+        # SES 미설정 폴백: CloudWatch 로그로 코드 출력 (ASCII 마커로 필터링 용이)
+        print(f"[LITTLEBOSS_RESET_CODE] {to_email} {code}")
         return
     import boto3
     boto3.client("ses").send_email(
