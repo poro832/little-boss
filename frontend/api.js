@@ -44,6 +44,22 @@ export const signup = (name, email, password) =>
 export const emailLogin = (email, password) =>
   api.post("/auth/login", { email, password });
 
+// 프로필/계정 관리
+export const updateProfile = (userId, name, affiliation) =>
+  api.patch("/auth/profile", { user_id: userId, name, affiliation });
+export const changePassword = (userId, currentPassword, newPassword) =>
+  api.post("/auth/change-password", { user_id: userId, current_password: currentPassword, new_password: newPassword });
+export const updateNotifSettings = (userId, settings) =>
+  api.post("/auth/notif-settings", { user_id: userId, settings });
+export const deleteAccount = (userId) =>
+  api.delete("/auth/account", { params: { user_id: userId } });
+
+// 비밀번호 찾기 (이메일 인증 코드)
+export const requestReset = (email) => api.post("/auth/reset/request", { email });
+export const verifyReset = (email, code) => api.post("/auth/reset/verify", { email, code });
+export const confirmReset = (email, code, newPassword) =>
+  api.post("/auth/reset/confirm", { email, code, new_password: newPassword });
+
 // 업로드 후 분석 완료까지 폴링 (status: done | error)
 export async function pollUntilDone(docId, { interval = 3000, maxTries = 100, onTick } = {}) {
   for (let i = 0; i < maxTries; i++) {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 import logo from "./logo.svg";
-import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem, deadlinesForMonth, signup as apiSignup, emailLogin as apiEmailLogin, deleteDocument } from "./api";
+import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem, deadlinesForMonth, signup as apiSignup, emailLogin as apiEmailLogin, deleteDocument, updateProfile, changePassword, updateNotifSettings, deleteAccount, requestReset, verifyReset, confirmReset } from "./api";
 
 
 // ── Color tokens ──
@@ -420,44 +420,48 @@ function ForgotPasswordPage({ toast, goLogin }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleEmailSubmit = () => {
-    if (!email) {
-      toast("이메일을 입력해주세요");
-      return;
-    }
-    if (!validateEmail(email)) {
-      toast("이메일 형식이 올바르지 않습니다");
-      return;
-    }
-    toast("인증 코드를 이메일로 발송했어요 📩");
-    setStep(2);
+  const [busy, setBusy] = useState(false);
+
+  const handleEmailSubmit = async () => {
+    if (!email) { toast("이메일을 입력해주세요"); return; }
+    if (!validateEmail(email)) { toast("이메일 형식이 올바르지 않습니다"); return; }
+    setBusy(true);
+    try {
+      await requestReset(email);
+      toast("인증 코드를 이메일로 발송했어요 📩");
+      setStep(2);
+    } catch (e) {
+      toast(e.response?.data?.message || "발송 중 오류가 발생했어요");
+    } finally { setBusy(false); }
   };
 
-  const handleCodeSubmit = () => {
-    if (!code) {
-      toast("인증 코드를 입력해주세요");
-      return;
-    }
-    toast("코드가 확인되었어요 ✅");
-    setStep(3);
+  const handleCodeSubmit = async () => {
+    if (!code) { toast("인증 코드를 입력해주세요"); return; }
+    setBusy(true);
+    try {
+      const { data } = await verifyReset(email, code);
+      if (!data.success) throw new Error(data.message);
+      toast("코드가 확인되었어요 ✅");
+      setStep(3);
+    } catch (e) {
+      toast(e.response?.data?.message || e.message || "코드 확인에 실패했어요");
+    } finally { setBusy(false); }
   };
 
-  const handlePasswordReset = () => {
+  const handlePasswordReset = async () => {
     const passwordError = getPasswordErrorMessage(newPassword);
-    if (passwordError) {
-      toast(passwordError);
-      return;
-    }
-    if (!confirmPassword) {
-      toast("비밀번호 확인을 입력해주세요");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast("비밀번호가 일치하지 않습니다");
-      return;
-    }
-    toast("비밀번호가 재설정되었어요 🎉");
-    goLogin();
+    if (passwordError) { toast(passwordError); return; }
+    if (!confirmPassword) { toast("비밀번호 확인을 입력해주세요"); return; }
+    if (newPassword !== confirmPassword) { toast("비밀번호가 일치하지 않습니다"); return; }
+    setBusy(true);
+    try {
+      const { data } = await confirmReset(email, code, newPassword);
+      if (!data.success) throw new Error(data.message);
+      toast("비밀번호가 재설정되었어요 🎉");
+      goLogin();
+    } catch (e) {
+      toast(e.response?.data?.message || e.message || "재설정에 실패했어요");
+    } finally { setBusy(false); }
   };
 
   return (
@@ -471,7 +475,7 @@ function ForgotPasswordPage({ toast, goLogin }) {
             <input style={S.formInput} type="email" placeholder="example@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
             {email && !validateEmail(email) && <p style={{ fontSize: 11, color: C.red, marginTop: 5 }}>⚠ 이메일 형식이 올바르지 않습니다</p>}
           </div>
-          <button style={{ ...S.btnPrimary, width: "100%", justifyContent: "center", padding: 13, fontSize: 15, marginBottom: 16 }} onClick={handleEmailSubmit}>이메일 보내기</button>
+          <button disabled={busy} style={{ ...S.btnPrimary, width: "100%", justifyContent: "center", padding: 13, fontSize: 15, marginBottom: 16, opacity: busy ? 0.6 : 1 }} onClick={handleEmailSubmit}>{busy ? "발송 중..." : "이메일 보내기"}</button>
           <div style={{ textAlign: "center", fontSize: 13, color: C.textLight }}>
             <span style={{ color: C.purple, fontWeight: 600, cursor: "pointer" }} onClick={goLogin}>로그인으로 돌아가기</span>
           </div>
@@ -486,7 +490,7 @@ function ForgotPasswordPage({ toast, goLogin }) {
             <label style={S.label}>인증 코드</label>
             <input style={S.formInput} type="text" placeholder="000000" value={code} onChange={(e) => setCode(e.target.value)} maxLength="6" />
           </div>
-          <button style={{ ...S.btnPrimary, width: "100%", justifyContent: "center", padding: 13, fontSize: 15, marginBottom: 16 }} onClick={handleCodeSubmit}>코드 확인</button>
+          <button disabled={busy} style={{ ...S.btnPrimary, width: "100%", justifyContent: "center", padding: 13, fontSize: 15, marginBottom: 16, opacity: busy ? 0.6 : 1 }} onClick={handleCodeSubmit}>{busy ? "확인 중..." : "코드 확인"}</button>
           <div style={{ textAlign: "center", fontSize: 13, color: C.textLight }}>
             <span style={{ color: C.purple, fontWeight: 600, cursor: "pointer" }} onClick={() => setStep(1)}>이전 단계로</span>
           </div>
@@ -508,7 +512,7 @@ function ForgotPasswordPage({ toast, goLogin }) {
             <label style={S.label}>비밀번호 확인</label>
             <input style={S.formInput} type="password" placeholder="비밀번호 재입력" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
           </div>
-          <button style={{ ...S.btnPrimary, width: "100%", justifyContent: "center", padding: 13, fontSize: 15, marginBottom: 16 }} onClick={handlePasswordReset}>비밀번호 재설정</button>
+          <button disabled={busy} style={{ ...S.btnPrimary, width: "100%", justifyContent: "center", padding: 13, fontSize: 15, marginBottom: 16, opacity: busy ? 0.6 : 1 }} onClick={handlePasswordReset}>{busy ? "처리 중..." : "비밀번호 재설정"}</button>
           <div style={{ textAlign: "center", fontSize: 13, color: C.textLight }}>
             <span style={{ color: C.purple, fontWeight: 600, cursor: "pointer" }} onClick={() => setStep(2)}>이전 단계로</span>
           </div>
@@ -1578,10 +1582,9 @@ function ExpiredPage({ onNavTo }) {
   );
 }
 
-function ScheduleDetailPage({ day, title, prevSub, onNavTo }) {
+function ScheduleDetailPage({ day, title, prevSub, onNavTo, toast }) {
   const [memo, setMemo] = useState("");
   const [checkState, setCheckState] = useState({}); // name -> bool (낙관적 오버라이드)
-  const { toast } = useToast();
   const { docs: serverDocs, loading } = useDocuments();
 
   // title로 실제 문서 매칭
@@ -1710,10 +1713,9 @@ function ScheduleDetailPage({ day, title, prevSub, onNavTo }) {
   );
 }
 
-function DocumentDetailPage({ data, prevSub, onNavTo }) {
+function DocumentDetailPage({ data, prevSub, onNavTo, toast }) {
   const [memo, setMemo] = useState("");
   const [checkState, setCheckState] = useState({}); // name -> bool (낙관적 오버라이드)
-  const { toast } = useToast();
   const memoKey = data ? `docMemo_${data.doc_id}` : null;
 
   // 메모 로드 (doc_id 기준 — 이름 변경/충돌에 안전)
@@ -1821,11 +1823,14 @@ function DocumentDetailPage({ data, prevSub, onNavTo }) {
   );
 }
 
-function Toggle({ defaultOn = false }) {
-  const [on, setOn] = useState(defaultOn);
+function Toggle({ defaultOn = false, checked, onChange }) {
+  const controlled = onChange !== undefined;
+  const [internal, setInternal] = useState(defaultOn);
+  const on = controlled ? checked : internal;
+  const handle = () => { if (controlled) onChange(); else setInternal(p => !p); };
   return (
     <label style={{ position: "relative", width: 44, height: 24, cursor: "pointer", display: "inline-block" }}>
-      <input type="checkbox" checked={on} onChange={() => setOn(p=>!p)} style={{ opacity: 0, width: 0, height: 0 }} />
+      <input type="checkbox" checked={on} onChange={handle} style={{ opacity: 0, width: 0, height: 0 }} />
       <span style={{ position: "absolute", inset: 0, borderRadius: 24, background: on ? C.purple : "#DDD", transition: "background .2s" }}>
         <span style={{ position: "absolute", width: 18, height: 18, borderRadius: "50%", background: "white", top: 3, left: on ? 23 : 3, transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }} />
       </span>
@@ -1833,11 +1838,13 @@ function Toggle({ defaultOn = false }) {
   );
 }
 
-function ProfilePage() {
+const DEFAULT_NOTIF = { deadline: true, incomplete: true, analysis: true, mail: true, weekly: false };
+
+function ProfilePage({ toast, onLogout }) {
   const user = getUser();
+  const userId = localStorage.getItem("user_id") || user.email;
+  const isEmailUser = !localStorage.getItem("user_token"); // 구글 로그인 사용자는 토큰 보유
   const [settingsTab, setSettingsTab] = useState("profile");
-  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
-  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const [tempImage, setTempImage] = useState(null);
   const [showImageEditor, setShowImageEditor] = useState(false);
@@ -1848,18 +1855,64 @@ function ProfilePage() {
   const fileInputRef = useRef(null);
   const tabs = [["profile","👤 프로필"],["notifications","🔔 알림 설정"],["security","🔒 보안"],["calendar","📅 캘린더 연동"]];
 
-  const handleSave = () => {
-    setShowSaveConfirm(true);
+  // 프로필 폼 (이메일=user_id는 변경 불가)
+  const [name, setName] = useState(user.name || "");
+  const [affiliation, setAffiliation] = useState(localStorage.getItem("user_affiliation") || "");
+  const [savingProfile, setSavingProfile] = useState(false);
+  // 비밀번호 변경 (이메일 가입자 전용)
+  const [curPw, setCurPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [savingPw, setSavingPw] = useState(false);
+  // 알림 설정
+  const [notif, setNotif] = useState(() => {
+    try { return { ...DEFAULT_NOTIF, ...(JSON.parse(localStorage.getItem("notif_settings") || "{}")) }; }
+    catch { return DEFAULT_NOTIF; }
+  });
+
+  const saveProfile = async () => {
+    if (!name.trim()) { toast("이름을 입력해주세요"); return; }
+    setSavingProfile(true);
+    try {
+      const { data } = await updateProfile(userId, name.trim(), affiliation.trim());
+      if (!data.success) throw new Error(data.message);
+      localStorage.setItem("user_name", name.trim());
+      localStorage.setItem("user_affiliation", affiliation.trim());
+      toast("프로필이 저장되었습니다 ✓");
+    } catch (e) { toast(e.response?.data?.message || e.message || "저장에 실패했어요"); }
+    finally { setSavingProfile(false); }
   };
 
-  const handleSaveConfirm = () => {
-    setShowSaveConfirm(false);
-    setShowSaveSuccess(true);
-    setTimeout(() => setShowSaveSuccess(false), 2000);
+  const savePassword = async () => {
+    if (!curPw || !newPw) { toast("비밀번호를 입력해주세요"); return; }
+    if (newPw !== confirmPw) { toast("새 비밀번호가 일치하지 않습니다"); return; }
+    if (newPw.length < 8) { toast("새 비밀번호는 8자 이상이어야 합니다"); return; }
+    setSavingPw(true);
+    try {
+      const { data } = await changePassword(userId, curPw, newPw);
+      if (!data.success) throw new Error(data.message);
+      toast("비밀번호가 변경되었습니다 ✓");
+      setCurPw(""); setNewPw(""); setConfirmPw("");
+    } catch (e) { toast(e.response?.data?.message || e.message || "변경에 실패했어요"); }
+    finally { setSavingPw(false); }
   };
 
-  const handleSaveCancel = () => {
-    setShowSaveConfirm(false);
+  const toggleNotif = async (key) => {
+    const next = { ...notif, [key]: !notif[key] };
+    setNotif(next);
+    localStorage.setItem("notif_settings", JSON.stringify(next));
+    try { await updateNotifSettings(userId, next); } catch (e) { /* 로컬엔 저장됨 — 무음 처리 */ }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("정말 탈퇴하시겠어요? 모든 문서가 삭제되며 복구할 수 없습니다.")) return;
+    try {
+      const { data } = await deleteAccount(userId);
+      if (!data.success) throw new Error(data.message);
+      localStorage.clear();
+      toast("회원 탈퇴가 완료되었습니다");
+      onLogout?.();
+    } catch (e) { toast(e.response?.data?.message || e.message || "탈퇴에 실패했어요"); }
   };
 
   const handleImageChange = (e) => {
@@ -2018,9 +2071,8 @@ function ProfilePage() {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-        <div><div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>내 정보</div><div style={{ fontSize: 14, color: C.textLight }}>계정 정보와 알림 설정을 관리하세요.</div></div>
-        <button onClick={handleSave} style={S.btnPrimary}>저장하기</button>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>내 정보</div><div style={{ fontSize: 14, color: C.textLight }}>계정 정보와 알림 설정을 관리하세요.</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 20, alignItems: "start" }}>
         <div style={{ background: "white", borderRadius: 14, overflow: "hidden" }}>
@@ -2072,45 +2124,56 @@ function ProfilePage() {
               </div>
               <hr style={{ border: "none", borderTop: `1px solid ${C.purpleBorder}`, margin: "0 0 24px" }} />
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>기본 정보</div>
-              {[["이름","홍길동","text"],["이메일","gaun@email.com","email"],["소속","학교 / 회사 이름 (선택)","text"]].map(([lbl,ph,tp]) => (
-                <div key={lbl} style={{ marginBottom: 16 }}>
-                  <label style={S.label}>{lbl}</label>
-                  <input style={S.formInput} type={tp} defaultValue={lbl==="이메일"?user.email:lbl==="이름"?user.name:""} placeholder={ph} />
-                </div>
-              ))}
+              <div style={{ marginBottom: 16 }}>
+                <label style={S.label}>이름</label>
+                <input style={S.formInput} type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="이름" />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={S.label}>이메일</label>
+                <input style={{ ...S.formInput, background: C.bg, color: C.textLight, cursor: "not-allowed" }} type="email" value={user.email} readOnly title="이메일은 변경할 수 없습니다" />
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label style={S.label}>소속</label>
+                <input style={S.formInput} type="text" value={affiliation} onChange={(e) => setAffiliation(e.target.value)} placeholder="학교 / 회사 이름 (선택)" />
+              </div>
+              <button onClick={saveProfile} disabled={savingProfile} style={{ ...S.btnPrimary, opacity: savingProfile ? 0.6 : 1 }}>{savingProfile ? "저장 중..." : "프로필 저장"}</button>
             </div>
           )}
           {settingsTab === "notifications" && (
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📱 푸시 알림</div>
-              {[["마감 임박 알림","마감 7일·3일·1일 전 알림",true],["서류 미완료 리마인더","미준비 서류가 있을 때 알림",true],["문서 분석 완료 알림","업로드 문서 분석이 끝나면 알림",true]].map(([lbl,sub,on]) => (
-                <div key={lbl} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${C.purpleBorder}` }}>
+              {[["마감 임박 알림","마감 7일·3일·1일 전 알림","deadline"],["서류 미완료 리마인더","미준비 서류가 있을 때 알림","incomplete"],["문서 분석 완료 알림","업로드 문서 분석이 끝나면 알림","analysis"]].map(([lbl,sub,key]) => (
+                <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${C.purpleBorder}` }}>
                   <div><div style={{ fontSize: 13, fontWeight: 500 }}>{lbl}</div><div style={{ fontSize: 12, color: C.textLight, marginTop: 2 }}>{sub}</div></div>
-                  <Toggle defaultOn={on} />
+                  <Toggle checked={notif[key]} onChange={() => toggleNotif(key)} />
                 </div>
               ))}
               <div style={{ fontSize: 15, fontWeight: 700, margin: "24px 0 16px" }}>📧 메일 알림</div>
-              {[["메일 알림 받기","이메일로 마감 일정 알림 수신",true],["주간 요약 메일","매주 월요일 이번 주 마감 일정 요약",false]].map(([lbl,sub,on]) => (
-                <div key={lbl} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${C.purpleBorder}` }}>
+              {[["메일 알림 받기","이메일로 마감 일정 알림 수신","mail"],["주간 요약 메일","매주 월요일 이번 주 마감 일정 요약","weekly"]].map(([lbl,sub,key]) => (
+                <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${C.purpleBorder}` }}>
                   <div><div style={{ fontSize: 13, fontWeight: 500 }}>{lbl}</div><div style={{ fontSize: 12, color: C.textLight, marginTop: 2 }}>{sub}</div></div>
-                  <Toggle defaultOn={on} />
+                  <Toggle checked={notif[key]} onChange={() => toggleNotif(key)} />
                 </div>
               ))}
-              <div style={{ marginTop: 20 }}>
-                <label style={S.label}>알림 수신 이메일</label>
-                <input style={S.formInput} type="email" defaultValue={user.email} />
-              </div>
+              <div style={{ marginTop: 16, fontSize: 12, color: C.textLight }}>변경 시 자동 저장됩니다 · 수신 이메일: {user.email || "-"}</div>
             </div>
           )}
           {settingsTab === "security" && (
             <div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>비밀번호 변경</div>
-              {[["현재 비밀번호","현재 비밀번호"],["새 비밀번호","새 비밀번호 (8자 이상)"],["새 비밀번호 확인","새 비밀번호 재입력"]].map(([lbl,ph]) => (
-                <div key={lbl} style={{ marginBottom: 16 }}><label style={S.label}>{lbl}</label><input style={S.formInput} type="password" placeholder={ph} /></div>
-              ))}
-              <button style={S.btnPrimary}>비밀번호 변경</button>
+              {isEmailUser ? (
+                <>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>비밀번호 변경</div>
+                  <div style={{ marginBottom: 16 }}><label style={S.label}>현재 비밀번호</label><input style={S.formInput} type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} placeholder="현재 비밀번호" /></div>
+                  <div style={{ marginBottom: 16 }}><label style={S.label}>새 비밀번호</label><input style={S.formInput} type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="새 비밀번호 (8자 이상)" /></div>
+                  <div style={{ marginBottom: 16 }}><label style={S.label}>새 비밀번호 확인</label><input style={S.formInput} type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} placeholder="새 비밀번호 재입력" /></div>
+                  <button onClick={savePassword} disabled={savingPw} style={{ ...S.btnPrimary, opacity: savingPw ? 0.6 : 1 }}>{savingPw ? "변경 중..." : "비밀번호 변경"}</button>
+                </>
+              ) : (
+                <div style={{ fontSize: 13, color: C.textMid, padding: "8px 0 16px", lineHeight: 1.6 }}>Google 로그인 계정은 별도 비밀번호가 없습니다. 비밀번호는 Google 계정에서 관리됩니다.</div>
+              )}
               <hr style={{ border: "none", borderTop: `1px solid ${C.purpleBorder}`, margin: "24px 0" }} />
-              <button style={{ ...S.btnOutline, color: C.red, borderColor: C.red }}>회원 탈퇴</button>
+              <div style={{ fontSize: 13, color: C.textLight, marginBottom: 10 }}>탈퇴 시 업로드한 모든 문서가 함께 삭제되며 복구할 수 없습니다.</div>
+              <button onClick={handleDeleteAccount} style={{ ...S.btnOutline, color: C.red, borderColor: C.red }}>회원 탈퇴</button>
             </div>
           )}
           {settingsTab === "calendar" && (() => {
@@ -2223,29 +2286,6 @@ function ProfilePage() {
         </div>
       )}
 
-      {/* 저장 확인 팝업 */}
-      {showSaveConfirm && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "white", borderRadius: 14, padding: 28, textAlign: "center", maxWidth: 320, boxShadow: "0 20px 48px rgba(0,0,0,0.2)" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>저장하시겠습니까?</div>
-            <div style={{ fontSize: 13, color: C.textLight, marginBottom: 24 }}>변경사항을 저장합니다.</div>
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <button onClick={handleSaveCancel} style={{ ...S.btnOutline, fontSize: 13 }}>취소</button>
-              <button onClick={handleSaveConfirm} style={{ ...S.btnPrimary, fontSize: 13 }}>확인</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 저장 완료 팝업 */}
-      {showSaveSuccess && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "white", borderRadius: 14, padding: 28, textAlign: "center", maxWidth: 320, boxShadow: "0 20px 48px rgba(0,0,0,0.2)" }}>
-            <div style={{ fontSize: 18, marginBottom: 8 }}>✅</div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>저장되었습니다</div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -2301,11 +2341,11 @@ export default function App() {
           {sub === "sub-home" && <Dashboard onNavTo={navTo} />}
           {sub === "sub-upload" && <UploadPage onNavTo={navTo} />}
           {sub === "sub-schedule" && <SchedulePage onNavTo={navTo} />}
-          {sub === "schedule-detail" && <ScheduleDetailPage day={scheduleDetailDay} title={scheduleDetailTitle} prevSub={prevSub} onNavTo={navTo} />}
+          {sub === "schedule-detail" && <ScheduleDetailPage day={scheduleDetailDay} title={scheduleDetailTitle} prevSub={prevSub} onNavTo={navTo} toast={toast} />}
           {sub === "sub-ongoing" && <OngoingPage onNavTo={navTo} />}
           {sub === "sub-expired" && <ExpiredPage onNavTo={navTo} />}
-          {sub === "doc-detail" && <DocumentDetailPage data={docDetailData} prevSub={prevSub} onNavTo={navTo} />}
-          {sub === "sub-profile" && <ProfilePage />}
+          {sub === "doc-detail" && <DocumentDetailPage data={docDetailData} prevSub={prevSub} onNavTo={navTo} toast={toast} />}
+          {sub === "sub-profile" && <ProfilePage toast={toast} onLogout={handleLogout} />}
         </main>
       </div>
       <ToastEl msg={msg} show={show} />
