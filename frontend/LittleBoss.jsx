@@ -292,16 +292,6 @@ function DividerOr() {
   );
 }
 
-function FormGroup({ label, type = "text", placeholder, hint }) {
-  return (
-    <div style={{ marginBottom: 16 }}>
-      <label style={S.label}>{label}</label>
-      <input style={S.formInput} type={type} placeholder={placeholder} />
-      {hint && <p style={{ fontSize: 11, color: C.textLight, marginTop: 5 }}>{hint}</p>}
-    </div>
-  );
-}
-
 function SignupPage({ onLogin, goLogin, toast }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -1371,17 +1361,7 @@ function SchedulePage({ onNavTo }) {
   );
 }
 
-function CheckItem({ label, defaultChecked }) {
-  const [checked, setChecked] = useState(defaultChecked);
-  return (
-    <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: C.textMid, cursor: "pointer" }}>
-      <input type="checkbox" checked={checked} onChange={() => setChecked(p => !p)} style={{ accentColor: C.purple, width: 15, height: 15, cursor: "pointer" }} />
-      {label}
-    </label>
-  );
-}
-
-function OngoingPage({ onNavTo }) {
+function OngoingPage({ onNavTo, toast }) {
   const { docs, loading, error, reload } = useDocuments();
   const [checkState, setCheckState] = useState({}); // `${docId}::${name}` -> bool (낙관적 오버라이드)
   const [deletingId, setDeletingId] = useState(null);
@@ -1394,7 +1374,7 @@ function OngoingPage({ onNavTo }) {
       await deleteDocument(docId);
       reload?.();
     } catch (err) {
-      alert("삭제 실패: " + (err.response?.data?.message || err.message));
+      toast("삭제 실패: " + (err.response?.data?.message || err.message));
     } finally {
       setDeletingId(null);
     }
@@ -1415,7 +1395,7 @@ function OngoingPage({ onNavTo }) {
       if (!data.success) throw new Error(data.message || "저장 실패");
     } catch (e) {
       setCheckState(s => ({ ...s, [key]: current })); // 롤백
-      alert("체크리스트 저장 실패: " + (e.response?.data?.message || e.message));
+      toast("체크리스트 저장 실패: " + (e.response?.data?.message || e.message));
     }
   };
 
@@ -1479,7 +1459,7 @@ function OngoingPage({ onNavTo }) {
   );
 }
 
-function ExpiredPage({ onNavTo }) {
+function ExpiredPage({ onNavTo, toast }) {
   const { docs: allDocs, loading, error, reload } = useDocuments();
   const [hidden, setHidden] = useState([]);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -1509,7 +1489,7 @@ function ExpiredPage({ onNavTo }) {
       setTimeout(() => setShowDeleteSuccess(false), 2000);
       reload?.(); // 서버 목록 갱신
     } catch (e) {
-      alert("삭제 실패: " + (e.response?.data?.message || e.message));
+      toast("삭제 실패: " + (e.response?.data?.message || e.message));
       setShowDeleteConfirm(false);
     } finally {
       setDeleting(false);
@@ -2361,8 +2341,8 @@ export default function App() {
           {sub === "sub-upload" && <UploadPage onNavTo={navTo} />}
           {sub === "sub-schedule" && <SchedulePage onNavTo={navTo} />}
           {sub === "schedule-detail" && <ScheduleDetailPage day={scheduleDetailDay} title={scheduleDetailTitle} prevSub={prevSub} onNavTo={navTo} toast={toast} />}
-          {sub === "sub-ongoing" && <OngoingPage onNavTo={navTo} />}
-          {sub === "sub-expired" && <ExpiredPage onNavTo={navTo} />}
+          {sub === "sub-ongoing" && <OngoingPage onNavTo={navTo} toast={toast} />}
+          {sub === "sub-expired" && <ExpiredPage onNavTo={navTo} toast={toast} />}
           {sub === "doc-detail" && <DocumentDetailPage data={docDetailData} prevSub={prevSub} onNavTo={navTo} toast={toast} />}
           {sub === "sub-profile" && <ProfilePage toast={toast} onLogout={handleLogout} />}
         </main>
