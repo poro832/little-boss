@@ -1,8 +1,11 @@
 """
 Google Calendar API 연동 - 분석된 일정을 사용자 캘린더에 등록
 프론트엔드가 Google OAuth 처리 후 access_token을 백엔드에 전달하는 방식
+(외부 의존성 없이 stdlib urllib 사용 — 어느 Lambda에서든 동작)
 """
-import requests
+import json
+import urllib.request
+import urllib.error
 
 CALENDAR_API_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
 
@@ -27,20 +30,22 @@ def create_events(events: list, access_token: str) -> list:
     for event in events:
         body = _build_event_body(event)
         try:
-            resp = requests.post(CALENDAR_API_URL, headers=headers, json=body, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
+            req = urllib.request.Request(
+                CALENDAR_API_URL, data=json.dumps(body).encode("utf-8"),
+                headers=headers, method="POST")
+            resp = urllib.request.urlopen(req, timeout=10)
+            data = json.loads(resp.read().decode("utf-8"))
             results.append({
                 "title": event["title"],
                 "id": data.get("id"),
                 "link": data.get("htmlLink"),
                 "status": "created"
             })
-        except requests.HTTPError as e:
+        except urllib.error.HTTPError as e:
             results.append({
                 "title": event["title"],
                 "status": "failed",
-                "error": f"HTTP {e.response.status_code}: {e.response.text[:200]}"
+                "error": f"HTTP {e.code}: {e.read().decode('utf-8', 'ignore')[:200]}"
             })
         except Exception as e:
             results.append({
