@@ -80,6 +80,17 @@ function Skeleton({ rows = 3 }) {
   );
 }
 
+// ── 반응형: 모바일 여부 (기본 분기점 768px) ──
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(typeof window !== "undefined" && window.innerWidth < bp);
+  useEffect(() => {
+    const onResize = () => setM(window.innerWidth < bp);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [bp]);
+  return m;
+}
+
 // ── Password validation ──
 const validatePassword = (password) => {
   const hasEnglish = /[a-zA-Z]/.test(password);
@@ -602,7 +613,7 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
     return () => document.removeEventListener("click", h);
   }, []);
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 58, zIndex: 50, background: C.white, borderBottom: `1px solid ${C.purpleBorder}`, display: "flex", alignItems: "center", padding: "0 24px", gap: 16, minWidth: "1200px" }}>
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 58, zIndex: 50, background: C.white, borderBottom: `1px solid ${C.purpleBorder}`, display: "flex", alignItems: "center", padding: "0 24px", gap: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9, flexShrink: 0 }}>
         <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ width: 36, height: 36, borderRadius: 8, border: "none", background: C.purpleBg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: C.purple }}>☰</button>
         <div onClick={() => onNavTo("sub-home")} style={{ display: "flex", alignItems: "center", gap: 9, fontWeight: 700, fontSize: 17, color: C.text, cursor: "pointer" }}>
@@ -710,7 +721,7 @@ function Sidebar({ currentSub, onNavTo, sidebarOpen }) {
   );
   const isDocsSub = ["sub-schedule","sub-ongoing","sub-expired"].includes(currentSub);
   return (
-    <aside style={{ width: 200, flexShrink: 0, background: C.white, borderRight: `1px solid ${C.purpleBorder}`, position: "fixed", top: 58, bottom: 0, padding: "20px 12px", overflowY: "auto", transform: sidebarOpen ? "translateX(0)" : "translateX(-200px)", opacity: sidebarOpen ? 1 : 0, transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)", pointerEvents: sidebarOpen ? "auto" : "none" }}>
+    <aside style={{ width: 200, flexShrink: 0, background: C.white, borderRight: `1px solid ${C.purpleBorder}`, position: "fixed", top: 58, bottom: 0, zIndex: 45, padding: "20px 12px", overflowY: "auto", transform: sidebarOpen ? "translateX(0)" : "translateX(-200px)", opacity: sidebarOpen ? 1 : 0, transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)", pointerEvents: sidebarOpen ? "auto" : "none" }}>
       {navItem("sub-home", "🏠", "대시보드", currentSub === "sub-home")}
       {navItem("sub-upload", "📎", "문서 업로드", currentSub === "sub-upload")}
       <div onClick={() => setSubOpen(p => !p)} style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 12px", borderRadius: 10, fontSize: 13, fontWeight: 500, color: isDocsSub ? C.purple : C.textMid, cursor: "pointer", marginBottom: 2 }}>
@@ -735,6 +746,7 @@ function Sidebar({ currentSub, onNavTo, sidebarOpen }) {
 // ── Sub pages ──
 function Dashboard({ onNavTo }) {
   const { docs: serverDocs } = useDocuments();
+  const isMobile = useIsMobile();
   const recentDocs = serverDocs
     .filter(d => d.status === "done")
     .map(d => {
@@ -805,7 +817,7 @@ function Dashboard({ onNavTo }) {
         <div><div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>{greeting()}, {getUser().name}님 👋</div><div style={{ fontSize: 14, color: C.textLight }}>오늘 처리해야 할 행정 문서와 일정을 확인하세요.</div></div>
         <button style={S.btnPrimary} onClick={() => onNavTo("sub-upload")}>📎 새 문서 업로드</button>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 }}>
         {/* Left card */}
         <div role={urgentDoc ? "button" : undefined} tabIndex={urgentDoc ? 0 : undefined} aria-label={urgentDoc ? `${urgentDoc.title} 상세 보기` : undefined} onKeyDown={(e) => { if (urgentDoc && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onNavTo('schedule-detail', urgentDoc.title); } }} style={{...S.card, cursor: urgentDoc ? 'pointer' : 'default', transition: 'all 0.2s'}} onClick={() => urgentDoc && onNavTo('schedule-detail', urgentDoc.title)} onMouseEnter={(e) => { if (urgentDoc) e.currentTarget.style.boxShadow = '0 12px 32px rgba(107,79,232,0.15)'; }} onMouseLeave={(e) => e.currentTarget.style.boxShadow = S.card.boxShadow}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>마감 임박 문서</div>
@@ -1585,6 +1597,7 @@ function ExpiredPage({ onNavTo }) {
 function ScheduleDetailPage({ day, title, prevSub, onNavTo, toast }) {
   const [memo, setMemo] = useState("");
   const [checkState, setCheckState] = useState({}); // name -> bool (낙관적 오버라이드)
+  const isMobile = useIsMobile();
   const { docs: serverDocs, loading } = useDocuments();
 
   // title로 실제 문서 매칭
@@ -1658,7 +1671,7 @@ function ScheduleDetailPage({ day, title, prevSub, onNavTo, toast }) {
       <div style={{ display: "inline-block", fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 20, background: data.bg, color: data.color, marginBottom: 20 }}>{data.dday}</div>
 
       {/* 내용 그리드 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 24 }}>
         {/* 왼쪽: 요약 */}
         <div style={{ ...S.card }}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>📋 일정 요약</div>
@@ -1716,6 +1729,7 @@ function ScheduleDetailPage({ day, title, prevSub, onNavTo, toast }) {
 function DocumentDetailPage({ data, prevSub, onNavTo, toast }) {
   const [memo, setMemo] = useState("");
   const [checkState, setCheckState] = useState({}); // name -> bool (낙관적 오버라이드)
+  const isMobile = useIsMobile();
   const memoKey = data ? `docMemo_${data.doc_id}` : null;
 
   // 메모 로드 (doc_id 기준 — 이름 변경/충돌에 안전)
@@ -1767,7 +1781,7 @@ function DocumentDetailPage({ data, prevSub, onNavTo, toast }) {
       <div style={{ display: "inline-block", fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 20, background: statusBg, color: statusColor, marginBottom: 20 }}>{completedCount}/{total} 완료</div>
 
       {/* 내용 그리드 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 24 }}>
         {/* 왼쪽: 요약 */}
         <div style={{ ...S.card }}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>📋 문서 요약</div>
@@ -1842,6 +1856,7 @@ const DEFAULT_NOTIF = { deadline: true, incomplete: true, analysis: true, mail: 
 
 function ProfilePage({ toast, onLogout }) {
   const user = getUser();
+  const isMobile = useIsMobile();
   const userId = localStorage.getItem("user_id") || user.email;
   const isEmailUser = !localStorage.getItem("user_token"); // 구글 로그인 사용자는 토큰 보유
   const [settingsTab, setSettingsTab] = useState("profile");
@@ -2074,7 +2089,7 @@ function ProfilePage({ toast, onLogout }) {
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>내 정보</div><div style={{ fontSize: 14, color: C.textLight }}>계정 정보와 알림 설정을 관리하세요.</div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 20, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "240px 1fr", gap: 20, alignItems: "start" }}>
         <div style={{ background: "white", borderRadius: 14, overflow: "hidden" }}>
           {tabs.map(([id, label]) => (
             <div key={id} onClick={() => setSettingsTab(id)} style={{ padding: "13px 18px", fontSize: 13, fontWeight: settingsTab===id ? 600 : 500, cursor: "pointer", borderLeft: `3px solid ${settingsTab===id ? C.purple : "transparent"}`, color: settingsTab===id ? C.purple : C.textMid, background: settingsTab===id ? C.purpleBg : "transparent" }}>{label}</div>
@@ -2299,14 +2314,15 @@ export default function App() {
   const [scheduleDetailDay, setScheduleDetailDay] = useState(null);
   const [scheduleDetailTitle, setScheduleDetailTitle] = useState(null);
   const [docDetailData, setDocDetailData] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(typeof window !== "undefined" && window.innerWidth >= 768);
   const { msg, show, toast } = useToast();
 
   const titleMap = { "sub-home":"대시보드","sub-upload":"문서 업로드","sub-schedule":"일정 관리","sub-ongoing":"진행 중인 문서","sub-expired":"마감된 문서","sub-profile":"내 정보", "schedule-detail":"일정 상세", "doc-detail":"문서 상세" };
 
   const handleLogin = (m) => { setPage("app"); setSub("sub-home"); toast(m); };
   const handleLogout = () => { setPage("login"); toast("로그아웃됐어요"); };
-  const navTo = (s, detailDay, data) => { if(s === "schedule-detail" || s === "doc-detail") setPrevSub(sub); setSub(s); if(detailDay) { if(typeof detailDay === 'number') setScheduleDetailDay(detailDay); else setScheduleDetailTitle(detailDay); } if(data) setDocDetailData(data); };
+  const navTo = (s, detailDay, data) => { if(s === "schedule-detail" || s === "doc-detail") setPrevSub(sub); setSub(s); if(detailDay) { if(typeof detailDay === 'number') setScheduleDetailDay(detailDay); else setScheduleDetailTitle(detailDay); } if(data) setDocDetailData(data); if(window.innerWidth < 768) setSidebarOpen(false); };
 
   // 히스토리 관리
   useEffect(() => {
@@ -2334,9 +2350,12 @@ export default function App() {
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       <style>{"@keyframes lbpulse{0%,100%{opacity:1}50%{opacity:.45}}"}</style>
       <Header isLoggedIn={true} onLogout={handleLogout} onLogin={() => setPage("login")} onSignup={() => setPage("signup")} onNavTo={navTo} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      <div style={{ display: "flex", paddingTop: 58, minHeight: "calc(100vh - 58px)", minWidth: "1200px" }}>
+      <div style={{ display: "flex", paddingTop: 58, minHeight: "calc(100vh - 58px)", minWidth: isMobile ? "auto" : 1024 }}>
         <Sidebar currentSub={sub} onNavTo={navTo} sidebarOpen={sidebarOpen} />
-        <main style={{ marginLeft: sidebarOpen ? 200 : 0, flex: 1, padding: "28px 28px 40px 48px", transition: "marginLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1)" }}>
+        {isMobile && sidebarOpen && (
+          <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", top: 58, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.4)", zIndex: 40 }} />
+        )}
+        <main style={{ marginLeft: (!isMobile && sidebarOpen) ? 200 : 0, flex: 1, minWidth: 0, padding: isMobile ? "20px 16px 32px" : "28px 28px 40px 48px", transition: "marginLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1)" }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>{titleMap[sub]}</div>
           {sub === "sub-home" && <Dashboard onNavTo={navTo} />}
           {sub === "sub-upload" && <UploadPage onNavTo={navTo} />}
