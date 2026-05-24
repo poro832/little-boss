@@ -1551,40 +1551,20 @@ function ExpiredPage({ onNavTo }) {
 
 function ScheduleDetailPage({ day, title, prevSub, onNavTo }) {
   const [memo, setMemo] = useState("");
-  const [checks, setChecks] = useState({});
+  const [checkState, setCheckState] = useState({}); // name -> bool (낙관적 오버라이드)
   const { toast } = useToast();
-
-  // 로드
-  useEffect(() => {
-    if (day || title) {
-      const key = `scheduleDetail_${title || day}`;
-      const saved = localStorage.getItem(key);
-      console.log("로드:", key, saved);
-      if (saved) {
-        try {
-          const { memo: savedMemo, checks: savedChecks } = JSON.parse(saved);
-          setMemo(savedMemo || "");
-          setChecks(savedChecks || {});
-        } catch (e) {
-          console.error("데이터 로드 오류:", e);
-        }
-      }
-    }
-  }, [day, title]);
-
-  // 자동 저장
-  useEffect(() => {
-    if (day || title) {
-      const key = `scheduleDetail_${title || day}`;
-      const data = JSON.stringify({ memo, checks });
-      localStorage.setItem(key, data);
-      console.log("저장:", key, data);
-    }
-  }, [memo, checks, day, title]);
-
   const { docs: serverDocs, loading } = useDocuments();
+
   // title로 실제 문서 매칭
   const matched = serverDocs.find(d => d.title === title || d.filename === title);
+  const docId = matched?.doc_id;
+  const memoKey = docId ? `docMemo_${docId}` : null;
+
+  // 메모 로드 (doc_id 기준 — 문서·일정 상세가 같은 메모 공유)
+  useEffect(() => {
+    if (memoKey) setMemo(localStorage.getItem(memoKey) || "");
+  }, [memoKey]);
+
   const data = matched ? (() => {
     const dd = ddayInfo(matched.deadlineDate);
     const urgent = dd.days !== null && dd.days <= 3;
@@ -1593,7 +1573,6 @@ function ScheduleDetailPage({ day, title, prevSub, onNavTo }) {
       deadline: matched.deadlineDate || "마감일 없음",
       dday: dd.text,
       summary: matched.summary || "요약 정보가 없습니다.",
-      documents: matched.checks.map(c => c.l),
       color: urgent ? C.red : C.purple,
       bg: urgent ? C.redBg : C.purpleBg,
     };
@@ -1607,18 +1586,30 @@ function ScheduleDetailPage({ day, title, prevSub, onNavTo }) {
     </div>
   );
 
-  const toggleCheck = (idx) => {
-    setChecks(p => ({ ...p, [idx]: !p[idx] }));
+  // 체크리스트: 백엔드(matched.checks) 기준 + 낙관적 오버라이드 (OngoingPage와 동일 저장소)
+  const mergedChecks = (matched.checks || []).map(c => ({
+    name: c.l,
+    done: c.l in checkState ? checkState[c.l] : c.done,
+  }));
+  const total = mergedChecks.length;
+  const completedCount = mergedChecks.filter(c => c.done).length;
+
+  const toggleCheck = async (name, current) => {
+    const next = !current;
+    setCheckState(s => ({ ...s, [name]: next })); // 즉시 반영
+    try {
+      const { data: res } = await updateChecklistItem(docId, name, next);
+      if (!res.success) throw new Error(res.message || "저장 실패");
+    } catch (e) {
+      setCheckState(s => ({ ...s, [name]: current })); // 롤백
+      toast("체크리스트 저장 실패: " + (e.response?.data?.message || e.message));
+    }
   };
 
-  const handleSave = () => {
-    const key = `scheduleDetail_${day}`;
-    const data = JSON.stringify({ memo, checks });
-    localStorage.setItem(key, data);
-    alert("저장되었습니다!");
+  const saveMemo = () => {
+    if (memoKey) localStorage.setItem(memoKey, memo);
+    toast("메모가 저장되었습니다 ✓");
   };
-
-  const completedCount = Object.values(checks).filter(Boolean).length;
 
   return (
     <div>
@@ -1646,18 +1637,19 @@ function ScheduleDetailPage({ day, title, prevSub, onNavTo }) {
         <div style={{ ...S.card }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 700 }}>📄 필요 서류</div>
-            <button onClick={handleSave} style={{ background: C.purple, color: "white", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>저장하기</button>
+            <span style={{ fontSize: 11, color: C.textLight }}>체크 시 자동 저장</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {data.documents.map((doc, idx) => (
-              <label key={idx} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
-                <input type="checkbox" checked={checks[idx] || false} onChange={() => toggleCheck(idx)} style={{ accentColor: data.color, width: 16, height: 16 }} />
-                <span style={{ color: C.textMid }}>{doc}</span>
+            {total === 0 && <div style={{ fontSize: 13, color: C.textLight }}>필요 서류 정보가 없습니다.</div>}
+            {mergedChecks.map((c) => (
+              <label key={c.name} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
+                <input type="checkbox" checked={c.done} onChange={() => toggleCheck(c.name, c.done)} style={{ accentColor: data.color, width: 16, height: 16 }} />
+                <span style={{ color: C.textMid, textDecoration: c.done ? "line-through" : "none" }}>{c.name}</span>
               </label>
             ))}
           </div>
           <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}`, fontSize: 12, color: C.textLight }}>
-            준비율: <span style={{ fontWeight: 600, color: data.color }}>{completedCount}/{data.documents.length}</span>
+            준비율: <span style={{ fontWeight: 600, color: data.color }}>{completedCount}/{total}</span>
           </div>
         </div>
       </div>
@@ -1666,7 +1658,7 @@ function ScheduleDetailPage({ day, title, prevSub, onNavTo }) {
       <div style={{ ...S.card, marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <div style={{ fontSize: 14, fontWeight: 700 }}>📝 메모</div>
-          <button onClick={handleSave} style={{ ...S.btnPrimary, fontSize: 12, padding: "6px 12px" }}>저장하기</button>
+          <button onClick={saveMemo} style={{ ...S.btnPrimary, fontSize: 12, padding: "6px 12px" }}>저장하기</button>
         </div>
         <textarea
           value={memo}
@@ -1691,55 +1683,42 @@ function ScheduleDetailPage({ day, title, prevSub, onNavTo }) {
 
 function DocumentDetailPage({ data, prevSub, onNavTo }) {
   const [memo, setMemo] = useState("");
-  const [checks, setChecks] = useState({});
+  const [checkState, setCheckState] = useState({}); // name -> bool (낙관적 오버라이드)
   const { toast } = useToast();
+  const memoKey = data ? `docMemo_${data.doc_id}` : null;
 
-  // 로드
+  // 메모 로드 (doc_id 기준 — 이름 변경/충돌에 안전)
   useEffect(() => {
-    if (data) {
-      const key = `documentDetail_${data.title}`;
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        try {
-          const { memo: savedMemo, checks: savedChecks } = JSON.parse(saved);
-          setMemo(savedMemo || "");
-          setChecks(savedChecks || {});
-        } catch (e) {
-          console.error("데이터 로드 오류:", e);
-        }
-      } else {
-        // 처음 로드: data.done개만큼 기본으로 선택
-        const initialChecks = {};
-        for (let i = 0; i < data.done; i++) {
-          initialChecks[i] = true;
-        }
-        setChecks(initialChecks);
-      }
-    }
-  }, [data]);
-
-  // 자동 저장
-  useEffect(() => {
-    if (data) {
-      const key = `documentDetail_${data.title}`;
-      localStorage.setItem(key, JSON.stringify({ memo, checks }));
-    }
-  }, [memo, checks, data]);
+    if (memoKey) setMemo(localStorage.getItem(memoKey) || "");
+  }, [memoKey]);
 
   if (!data) return <div>문서를 찾을 수 없습니다</div>;
 
-  const toggleCheck = (idx) => {
-    setChecks(p => ({ ...p, [idx]: !p[idx] }));
+  // 체크리스트는 백엔드(data.checks)를 기준으로 표시, checkState로 낙관적 오버라이드
+  const mergedChecks = (data.checks || []).map(c => ({
+    name: c.l,
+    done: c.l in checkState ? checkState[c.l] : c.done,
+  }));
+  const total = mergedChecks.length;
+  const completedCount = mergedChecks.filter(c => c.done).length;
+  const statusColor = total > 0 && completedCount === total ? C.green : completedCount > 0 ? C.ongoing : C.red;
+  const statusBg = statusColor === C.green ? C.greenBg : statusColor === C.red ? C.redBg : C.ongoingBg;
+
+  const toggleCheck = async (name, current) => {
+    const next = !current;
+    setCheckState(s => ({ ...s, [name]: next })); // 즉시 반영
+    try {
+      const { data: res } = await updateChecklistItem(data.doc_id, name, next);
+      if (!res.success) throw new Error(res.message || "저장 실패");
+    } catch (e) {
+      setCheckState(s => ({ ...s, [name]: current })); // 롤백
+      toast("체크리스트 저장 실패: " + (e.response?.data?.message || e.message));
+    }
   };
 
-  const completedCount = Object.values(checks).filter(Boolean).length;
-  const statusColor = completedCount === data.total ? C.green : completedCount > 0 ? C.ongoing : C.red;
-
-  const handleSave = () => {
-    const key = `documentDetail_${data.title}`;
-    const saveData = JSON.stringify({ memo, checks });
-    localStorage.setItem(key, saveData);
-    alert("저장되었습니다!");
+  const saveMemo = () => {
+    if (memoKey) localStorage.setItem(memoKey, memo);
+    toast("메모가 저장되었습니다 ✓");
   };
 
   return (
@@ -1754,7 +1733,7 @@ function DocumentDetailPage({ data, prevSub, onNavTo }) {
       </div>
 
       {/* 진행률 배지 */}
-      <div style={{ display: "inline-block", fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 20, background: statusColor === C.green ? "#F0FDF4" : statusColor === C.red ? "#FFE5E5" : "#FFF7ED", color: statusColor, marginBottom: 20 }}>{completedCount}/{data.total} 완료</div>
+      <div style={{ display: "inline-block", fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 20, background: statusBg, color: statusColor, marginBottom: 20 }}>{completedCount}/{total} 완료</div>
 
       {/* 내용 그리드 */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
@@ -1769,18 +1748,19 @@ function DocumentDetailPage({ data, prevSub, onNavTo }) {
         <div style={{ ...S.card }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 700 }}>📄 필요 서류</div>
-            <button onClick={handleSave} style={{ background: C.purple, color: "white", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>저장하기</button>
+            <span style={{ fontSize: 11, color: C.textLight }}>체크 시 자동 저장</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {data.documents.map((doc, idx) => (
-              <label key={idx} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
-                <input type="checkbox" checked={checks[idx] || false} onChange={() => toggleCheck(idx)} style={{ accentColor: statusColor, width: 16, height: 16 }} />
-                <span style={{ color: C.textMid }}>{doc}</span>
+            {total === 0 && <div style={{ fontSize: 13, color: C.textLight }}>필요 서류 정보가 없습니다.</div>}
+            {mergedChecks.map((c) => (
+              <label key={c.name} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
+                <input type="checkbox" checked={c.done} onChange={() => toggleCheck(c.name, c.done)} style={{ accentColor: statusColor, width: 16, height: 16 }} />
+                <span style={{ color: C.textMid, textDecoration: c.done ? "line-through" : "none" }}>{c.name}</span>
               </label>
             ))}
           </div>
           <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}`, fontSize: 12, color: C.textLight }}>
-            준비율: <span style={{ fontWeight: 600, color: statusColor }}>{completedCount}/{data.documents.length}</span>
+            준비율: <span style={{ fontWeight: 600, color: statusColor }}>{completedCount}/{total}</span>
           </div>
         </div>
       </div>
@@ -1789,7 +1769,7 @@ function DocumentDetailPage({ data, prevSub, onNavTo }) {
       <div style={{ ...S.card, marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <div style={{ fontSize: 14, fontWeight: 700 }}>📝 메모</div>
-          <button onClick={handleSave} style={{ ...S.btnPrimary, fontSize: 12, padding: "6px 12px" }}>저장하기</button>
+          <button onClick={saveMemo} style={{ ...S.btnPrimary, fontSize: 12, padding: "6px 12px" }}>저장하기</button>
         </div>
         <textarea
           value={memo}
