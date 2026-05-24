@@ -52,6 +52,34 @@ const S = {
   label: { fontSize: 13, fontWeight: 600, color: C.textMid, display: "block", marginBottom: 6 },
 };
 
+// ── 빈 상태 (아이콘 + 안내 + 선택적 CTA) ──
+function EmptyState({ icon = "📭", title, desc, actionLabel, onAction }) {
+  return (
+    <div style={{ ...S.card, textAlign: "center", padding: "44px 24px" }}>
+      <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.85 }}>{icon}</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>{title}</div>
+      {desc && <div style={{ fontSize: 13, color: C.textLight, lineHeight: 1.6, marginBottom: actionLabel ? 18 : 0 }}>{desc}</div>}
+      {actionLabel && <button onClick={onAction} style={{ ...S.btnPrimary, justifyContent: "center" }}>{actionLabel}</button>}
+    </div>
+  );
+}
+
+// ── 로딩 스켈레톤 (lbpulse 키프레임은 App 루트에서 주입) ──
+function Skeleton({ rows = 3 }) {
+  const bar = (w) => ({ height: 11, width: w, borderRadius: 6, background: C.bg, animation: "lbpulse 1.2s ease-in-out infinite" });
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ ...bar("45%"), height: 14 }} />
+          <div style={bar("78%")} />
+          <div style={bar("60%")} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Password validation ──
 const validatePassword = (password) => {
   const hasEnglish = /[a-zA-Z]/.test(password);
@@ -917,7 +945,8 @@ function Dashboard({ onNavTo }) {
           </div>
         </div>
         {filteredDocs.length === 0 && (
-          <div style={{ textAlign: "center", color: C.textLight, fontSize: 13, padding: "20px 0" }}>
+          <div style={{ textAlign: "center", color: C.textLight, fontSize: 13, padding: "28px 0" }}>
+            <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.8 }}>{recentDocs.length === 0 ? "📄" : "🔍"}</div>
             {recentDocs.length === 0 ? "아직 분석된 문서가 없습니다." : "조건에 맞는 문서가 없습니다."}
           </div>
         )}
@@ -1302,10 +1331,10 @@ function SchedulePage({ onNavTo }) {
         </div>
       </div>
       <div style={{ fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>마감 일정 목록</div>
-      {loading && <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>불러오는 중...</div>}
+      {loading && <Skeleton rows={3} />}
       {error && <div style={{ ...S.card, color: C.red }}>⚠️ {error}</div>}
       {!loading && !error && scheduleList.length === 0 && (
-        <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>마감 일정이 없습니다.</div>
+        <EmptyState icon="📅" title="마감 일정이 없습니다" desc="문서를 업로드하면 마감 일정이 자동으로 정리됩니다." actionLabel="문서 업로드" onAction={() => onNavTo("sub-upload")} />
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {scheduleList.map(item => (
@@ -1377,10 +1406,10 @@ function OngoingPage({ onNavTo }) {
   return (
     <div>
       <div style={{ marginBottom: 24 }}><div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>진행 중인 문서</div><div style={{ fontSize: 14, color: C.textLight }}>준비 중인 서류를 체크리스트로 관리하세요.</div></div>
-      {loading && <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>불러오는 중...</div>}
+      {loading && <Skeleton rows={3} />}
       {error && <div style={{ ...S.card, color: C.red }}>⚠️ {error}</div>}
       {!loading && !error && ongoing.length === 0 && (
-        <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>진행 중인 문서가 없습니다. 문서를 업로드해보세요.</div>
+        <EmptyState icon="📂" title="진행 중인 문서가 없습니다" desc="새 문서를 업로드하면 분석 후 여기에서 진행 상황을 관리할 수 있어요." actionLabel="문서 업로드" onAction={() => onNavTo("sub-upload")} />
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {ongoing.map(doc => {
@@ -1480,10 +1509,10 @@ function ExpiredPage({ onNavTo }) {
   return (
     <div>
       <div style={{ marginBottom: 24 }}><div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>마감된 문서</div><div style={{ fontSize: 14, color: C.textLight }}>마감이 지난 문서 목록입니다.</div></div>
-      {loading && <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>불러오는 중...</div>}
+      {loading && <Skeleton rows={3} />}
       {error && <div style={{ ...S.card, color: C.red }}>⚠️ {error}</div>}
       {!loading && !error && docs.length === 0 && (
-        <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>마감된 문서가 없습니다.</div>
+        <EmptyState icon="🗂️" title="마감된 문서가 없습니다" desc="마감일이 지난 문서가 여기에 모입니다." />
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {docs.map(doc => {
@@ -1578,7 +1607,7 @@ function ScheduleDetailPage({ day, title, prevSub, onNavTo }) {
     };
   })() : null;
 
-  if (loading) return <div style={{ ...S.card, textAlign: "center", color: C.textLight }}>불러오는 중...</div>;
+  if (loading) return <Skeleton rows={2} />;
   if (!data) return (
     <div>
       <button onClick={() => onNavTo(prevSub || "sub-schedule")} style={{ ...S.btnOutline, fontSize: 12, marginBottom: 16 }}>← 돌아가기</button>
@@ -2263,6 +2292,7 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Noto Sans KR', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+      <style>{"@keyframes lbpulse{0%,100%{opacity:1}50%{opacity:.45}}"}</style>
       <Header isLoggedIn={true} onLogout={handleLogout} onLogin={() => setPage("login")} onSignup={() => setPage("signup")} onNavTo={navTo} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       <div style={{ display: "flex", paddingTop: 58, minHeight: "calc(100vh - 58px)", minWidth: "1200px" }}>
         <Sidebar currentSub={sub} onNavTo={navTo} sidebarOpen={sidebarOpen} />
