@@ -1,7 +1,22 @@
 # LittleBoss × Slack 연동 설계
 
 - 작성일: 2026-05-24
-- 상태: 설계 승인됨 (구현은 추후 착수)
+- 상태: 설계 승인됨 · IAM 제약 반영해 구현 설계 확정(아래 ADDENDUM)
+
+## ADDENDUM (2026-05-24, IAM 제약 반영 — 이게 최종 구현 설계)
+
+권한 점검 결과 사용자(`sgu-pj-03`)는 **`iam:PutRolePolicy`·`secretsmanager:CreateSecret`·`dynamodb:UpdateTimeToLive`·SES 차단**, 반면 **Lambda 생성·`iam:PassRole`·기존 Lambda 코드 수정·API Gateway 리소스 생성·기존 테이블 R/W·S3 put**은 허용. 따라서 본문의 SQS/Secrets Manager/KMS/신규 테이블 기반 설계를 아래로 **대체**한다:
+
+- **비동기 큐(SQS) 제거.** 무거운 분석은 이미 S3 업로드가 트리거하는 기존 파이프라인이 처리하므로, `slack-handler`는 **경량 ingest만**(서명검증 → 파일 다운로드 → 기존 `process()`로 S3 put+doc 생성 → 즉시 ack). 분석·캘린더·알림은 기존 비동기 파이프라인 끝(`action-executor`)에서.
+- **신규 Lambda 2개**: `sgu-pj-03-slack-handler`(POST /slack/events), `sgu-pj-03-google-oauth`(GET /slack/google/callback). 둘 다 기존 `SafeRole-sgu-pj` 사용. (worker·SQS 불필요)
+- **신규 테이블 대신 기존 `users` 테이블 재사용**(역할 권한 확실):
+  - `user_id="slack#<slack_user_id>"` 항목 → `{email}` (Slack→이메일 매핑)
+  - `user_id="<email>"` 사용자 항목에 `google_refresh_token` 필드(at-rest 저장)
+  - `user_id="evt#<event_id>"` 항목 + 조건부 put → 멱등(중복 처리 방지)
+- **시크릿은 Lambda 환경변수**(Secrets Manager 대체): `SLACK_SIGNING_SECRET`, `SLACK_BOT_TOKEN`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+- **KMS 봉투암호화 제거** → refresh token은 DynamoDB at-rest 암호화 + IAM 접근 제한에 의존.
+- 3초 룰: ingest가 3초 초과 시 Slack 재시도 → `evt#` 멱등으로 흡수.
+- 앞서 생성한 SQS 큐·`slack-links`/`slack-events` 테이블·KMS 키는 미사용(정리 가능).
 
 ## Context (왜 하는가)
 
