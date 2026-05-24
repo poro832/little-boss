@@ -37,11 +37,22 @@ def handle(event, context=None):
     return _resp(200, "ok")                                # 3초 내 즉시 ack
 
 
+def _share_ts(info: dict, channel: str):
+    """files.info의 shares에서 파일이 공유된 메시지 ts를 추출 (스레드 anchor용)."""
+    shares = info.get("shares", {}) or {}
+    for vis in ("public", "private"):
+        arr = (shares.get(vis) or {}).get(channel)
+        if arr:
+            return arr[0].get("ts")
+    return None
+
+
 def _ingest(ev):
     from handlers.upload_handler import process
     token = os.environ["SLACK_BOT_TOKEN"]
-    slack_user, channel, ts = ev.get("user_id"), ev.get("channel_id"), ev.get("event_ts")
+    slack_user, channel = ev.get("user_id"), ev.get("channel_id")
     info = get_file_info(token, ev.get("file_id"))
+    ts = _share_ts(info, channel) or ev.get("event_ts")   # 파일이 올라온 메시지 ts → 스레드 답글 anchor
     filename = info.get("name", "slack_file")
     data = download_file(token, info["url_private_download"])
     email = get_email_for_slack(slack_user)
