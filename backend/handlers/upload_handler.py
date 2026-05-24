@@ -70,6 +70,50 @@ def handle(event, context=None):
         r = login(b.get('email'), b.get('password'))
         return _response(r.pop('code', 200 if r.get('success') else 401), r)
 
+    # ── 프로필/계정 관리 ──
+    if method == 'PATCH' and path == '/auth/profile':
+        from handlers.auth_handler import update_profile
+        b = _json_body(event)
+        r = update_profile(b.get('user_id'), b.get('name'), b.get('affiliation'))
+        return _response(r.pop('code', 200 if r.get('success') else 400), r)
+
+    if method == 'POST' and path == '/auth/change-password':
+        from handlers.auth_handler import change_password
+        b = _json_body(event)
+        r = change_password(b.get('user_id'), b.get('current_password'), b.get('new_password'))
+        return _response(r.pop('code', 200 if r.get('success') else 400), r)
+
+    if method == 'POST' and path == '/auth/notif-settings':
+        from handlers.auth_handler import update_notif_settings
+        b = _json_body(event)
+        r = update_notif_settings(b.get('user_id'), b.get('settings'))
+        return _response(r.pop('code', 200 if r.get('success') else 400), r)
+
+    if method == 'DELETE' and path == '/auth/account':
+        from handlers.auth_handler import delete_account
+        user_id = (event.get('queryStringParameters') or {}).get('user_id') or _json_body(event).get('user_id')
+        r = delete_account(user_id)
+        return _response(r.pop('code', 200 if r.get('success') else 400), r)
+
+    # ── 비밀번호 찾기 (이메일 인증 코드) ──
+    if method == 'POST' and path == '/auth/reset/request':
+        from handlers.auth_handler import request_reset
+        b = _json_body(event)
+        r = request_reset(b.get('email'))
+        return _response(r.pop('code', 200 if r.get('success') else 400), r)
+
+    if method == 'POST' and path == '/auth/reset/verify':
+        from handlers.auth_handler import verify_reset
+        b = _json_body(event)
+        r = verify_reset(b.get('email'), b.get('code'))
+        return _response(r.pop('code', 200 if r.get('success') else 400), r)
+
+    if method == 'POST' and path == '/auth/reset/confirm':
+        from handlers.auth_handler import confirm_reset
+        b = _json_body(event)
+        r = confirm_reset(b.get('email'), b.get('code'), b.get('new_password'))
+        return _response(r.pop('code', 200 if r.get('success') else 400), r)
+
     return _response(400, {'success': False, 'message': f'알 수 없는 경로: {method} {path}'})
 
 

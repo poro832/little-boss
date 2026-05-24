@@ -106,6 +106,23 @@ def save_user(data: dict):
     table.put_item(Item=data)
 
 
+def delete_user(user_id: str) -> bool:
+    """사용자 레코드 삭제 (회원 탈퇴)."""
+    if ENV == "local":
+        path = LOCAL_DB_PATH / "_users.json"
+        if path.exists():
+            users = json.loads(path.read_text(encoding="utf-8"))
+            users.pop(user_id, None)
+            path.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+        return True
+
+    import boto3
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table(os.getenv('USERS_TABLE', 'sgu-pj-03-users'))
+    table.delete_item(Key={'user_id': user_id})
+    return True
+
+
 def put_s3_json(key: str, data: dict):
     """S3에 작은 JSON 객체 저장 (ai-analyzer 트리거용 마커).
     로컬에서는 동작하지 않음 (S3 이벤트가 로컬에 없으므로)."""
