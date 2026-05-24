@@ -65,6 +65,13 @@ def process(doc_id: str) -> dict:
         doc["status"] = "done"
         save_document(doc_id, doc)
 
+        # Slack 출처 문서면 스레드 알림 + 개인 캘린더 등록 (실패해도 분석 성공은 유지)
+        try:
+            from handlers.action_handler import notify_slack_done
+            notify_slack_done(doc)
+        except Exception as e:
+            print(f"[SLACK_NOTIFY_ERROR] {e}")
+
         return {
             "success": True,
             "doc_id": doc_id,

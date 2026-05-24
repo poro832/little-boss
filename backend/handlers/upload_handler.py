@@ -166,9 +166,10 @@ def _response(status_code, body):
     }
 
 
-def process(filename: str, file_bytes: bytes, user_id: str = "local_user") -> dict:
+def process(filename: str, file_bytes: bytes, user_id: str = "local_user", extra: dict = None) -> dict:
     """
     업로드 처리
+    extra: 문서 레코드에 병합할 추가 메타(예: Slack 출처 source/slack_channel/slack_thread_ts)
     반환: { doc_id, status, message }
     """
     ext = os.path.splitext(filename)[1].lower()
@@ -185,6 +186,8 @@ def process(filename: str, file_bytes: bytes, user_id: str = "local_user") -> di
 
     doc_data = dataclasses.asdict(doc)
     doc_data["file_path"] = file_path
+    if extra:
+        doc_data.update(extra)
     save_document(doc.doc_id, doc_data)
 
     return {

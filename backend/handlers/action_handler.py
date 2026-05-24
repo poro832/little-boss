@@ -136,6 +136,45 @@ def handle_checklist(doc_id: str) -> dict:
     }
 
 
+def notify_slack_done(doc: dict):
+    """source=slack 문서의 분석 완료 시: 스레드 답글 + (연결 시) 개인 Google 캘린더 등록.
+    파이프라인 종료(ai-analyzer가 analysis 저장) 직후 호출한다. 비-Slack 문서는 무시."""
+    if not doc or doc.get("source") != "slack":
+        return
+    token = os.getenv("SLACK_BOT_TOKEN")
+    ch, ts = doc.get("slack_channel"), doc.get("slack_thread_ts")
+    if not token or not ch or not ts:
+        return
+    from utils.slack import post_message
+    from utils.slack_links import get_refresh_token
+
+    a = doc.get("analysis", {}) or {}
+    lines = [f"*{a.get('document_type', '문서')}* 분석 완료 ✅"]
+    dls = a.get("deadlines", [])
+    if dls:
+        lines.append("📅 마감: " + ", ".join(f"{d.get('date')} {d.get('description', '')}".strip() for d in dls))
+    reqs = a.get("required_documents", [])
+    if reqs:
+        lines.append("📄 필요서류: " + ", ".join(r.get("name", "") for r in reqs))
+
+    cal = ""
+    email = doc.get("user_id", "")
+    rt = get_refresh_token(email) if "@" in (email or "") else None
+    if rt:
+        try:
+            from utils.slack_oauth import refresh_access_token
+            access = refresh_access_token(os.environ["GOOGLE_CLIENT_ID"], os.environ["GOOGLE_CLIENT_SECRET"], rt)
+            r = handle_calendar(doc["doc_id"], access)
+            cal = f"\n🗓️ 캘린더 {r.get('count', 0)}건 등록 완료"
+        except Exception as e:
+            print(f"[SLACK_CAL_ERROR] {e}")
+            cal = "\n⚠️ 캘린더 등록 실패(연결이 만료됐으면 다음 업로드 때 재연결 안내를 드려요)"
+    try:
+        post_message(token, ch, ts, "\n".join(lines) + cal)
+    except Exception as e:
+        print(f"[SLACK_POST_ERROR] {e}")
+
+
 def handle_checklist_update(doc_id: str, item_name: str, completed: bool) -> dict:
     """
     체크리스트 항목 완료 처리
