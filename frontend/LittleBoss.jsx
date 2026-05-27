@@ -593,6 +593,7 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
   });
   // dismiss(닫기)된 알림 제외
   let visibleNotifs = notificationsRaw.filter(n => !dismissed.includes(n.key));
+  const hasNotifs = visibleNotifs.length > 0;   // 실제 알림 존재 여부 (벨 빨간 점 표시 기준)
   if (visibleNotifs.length === 0) {
     visibleNotifs = [{ id: 0, title: "알림 없음", message: "새로운 알림이 없습니다", time: "", icon: "🔔", kind: "empty" }];
   }
@@ -623,7 +624,7 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
           <span style={{ fontSize: 12, color: C.textMid, background: C.purpleBg, padding: "5px 12px", borderRadius: 20 }}>☀️ 오늘은 맑습니다</span>
           <div style={{ position: "relative" }}>
             <button onClick={e => { e.stopPropagation(); setNotifOpen(!notifOpen); setDd(false); }} style={{ width: 36, height: 36, borderRadius: 10, background: C.purpleBg, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: C.purple, position: "relative" }}>
-              🔔<span style={{ position: "absolute", top: 7, right: 7, width: 7, height: 7, borderRadius: "50%", background: C.red, border: "1.5px solid white" }} />
+              🔔{hasNotifs && <span style={{ position: "absolute", top: 7, right: 7, width: 7, height: 7, borderRadius: "50%", background: C.red, border: "1.5px solid white" }} />}
             </button>
             {notifOpen && (
               <div style={{ position: "absolute", top: "calc(100% + 12px)", right: 0, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.12)", width: 320, maxHeight: 400, overflowY: "auto", zIndex: 200 }}>
