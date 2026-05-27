@@ -623,7 +623,7 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 12, color: C.textMid, background: C.purpleBg, padding: "5px 12px", borderRadius: 20 }}>☀️ 오늘은 맑습니다</span>
           <div style={{ position: "relative" }}>
-            <button onClick={e => { e.stopPropagation(); setNotifOpen(!notifOpen); setDd(false); }} style={{ width: 36, height: 36, borderRadius: 10, background: C.purpleBg, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: C.purple, position: "relative" }}>
+            <button aria-label="알림" onClick={e => { e.stopPropagation(); setNotifOpen(!notifOpen); setDd(false); }} style={{ width: 36, height: 36, borderRadius: 10, background: C.purpleBg, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: C.purple, position: "relative" }}>
               🔔{hasNotifs && <span style={{ position: "absolute", top: 7, right: 7, width: 7, height: 7, borderRadius: "50%", background: C.red, border: "1.5px solid white" }} />}
             </button>
             {notifOpen && (
@@ -660,7 +660,7 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
                               <div style={{ fontSize: 10, color: C.textLight }}>{notif.time}</div>
                             </div>
                             {notif.kind !== "empty" && (
-                              <button onClick={(e) => dismissNotif(notif.key, e)} title="알림 닫기" style={{ background: "none", border: "none", cursor: "pointer", color: C.textLight, fontSize: 15, lineHeight: 1, padding: "0 2px", flexShrink: 0 }}>✕</button>
+                              <button onClick={(e) => dismissNotif(notif.key, e)} title="알림 닫기" aria-label="알림 닫기" style={{ background: "none", border: "none", cursor: "pointer", color: C.textLight, fontSize: 15, lineHeight: 1, padding: "0 2px", flexShrink: 0 }}>✕</button>
                             )}
                           </div>
                         </div>
@@ -736,7 +736,7 @@ function Sidebar({ currentSub, onNavTo, sidebarOpen }) {
 
 // ── Sub pages ──
 function Dashboard({ onNavTo }) {
-  const { docs: serverDocs } = useDocuments();
+  const { docs: serverDocs, loading } = useDocuments();
   const isMobile = useIsMobile();
   const recentDocs = serverDocs
     .filter(d => d.status === "done")
@@ -774,6 +774,9 @@ function Dashboard({ onNavTo }) {
   const [hoverDetailList, setHoverDetailList] = useState(false);
   const [search, setSearch] = useState("");
   const [hoverMonth, setHoverMonth] = useState(false);
+
+  // 초기 로딩 중에는 카드가 빈 채로 깜빡이지 않도록 스켈레톤 표시
+  if (loading) return <Skeleton rows={3} />;
 
   // 최근 문서: 검색어(문서명) + 상태 필터 적용
   const filteredDocs = recentDocs.filter(
@@ -877,8 +880,8 @@ function Dashboard({ onNavTo }) {
               </div>
             </div>
             <div style={{ display: "flex", gap: 6 }}>
-              <button onClick={handlePrevMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid " + C.border, background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>‹</button>
-              <button onClick={handleNextMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid " + C.border, background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>›</button>
+              <button aria-label="이전 달" onClick={handlePrevMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid " + C.border, background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>‹</button>
+              <button aria-label="다음 달" onClick={handleNextMonth} style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid " + C.border, background: "white", cursor: "pointer", fontSize: 16, color: C.textMid }}>›</button>
             </div>
             {showDatePicker && (
               <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, background: "white", borderRadius: 12, padding: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 10, minWidth: 240 }}>
@@ -1430,7 +1433,7 @@ function OngoingPage({ onNavTo, toast }) {
                   <span style={{ fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 20, background: dd.days !== null && dd.days <= 3 ? C.redBg : C.purpleBg, color: dd.days !== null && dd.days <= 3 ? C.red : C.purple }}>
                     {doc.deadlineDate ? `마감 ${doc.deadlineDate} · ${dd.text}` : "마감일 없음"}
                   </span>
-                  <button onClick={(e) => handleDelete(e, doc.doc_id, doc.title)} disabled={deletingId === doc.doc_id} title="삭제" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, opacity: deletingId === doc.doc_id ? 0.4 : 0.6, padding: 2 }}>🗑️</button>
+                  <button onClick={(e) => handleDelete(e, doc.doc_id, doc.title)} disabled={deletingId === doc.doc_id} title="삭제" aria-label={`${doc.title} 삭제`} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, opacity: deletingId === doc.doc_id ? 0.4 : 0.6, padding: 2 }}>🗑️</button>
                   <span style={{ fontSize: 20, color: C.textLight, fontWeight: 300 }}>›</span>
                 </div>
               </div>
@@ -2335,7 +2338,7 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Noto Sans KR', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-      <style>{"@keyframes lbpulse{0%,100%{opacity:1}50%{opacity:.45}}"}</style>
+      <style>{"@keyframes lbpulse{0%,100%{opacity:1}50%{opacity:.45}} :focus-visible{outline:2px solid #6B4FE8;outline-offset:2px;border-radius:6px}"}</style>
       <Header isLoggedIn={true} onLogout={handleLogout} onLogin={() => setPage("login")} onSignup={() => setPage("signup")} onNavTo={navTo} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       <div style={{ display: "flex", paddingTop: 58, minHeight: "calc(100vh - 58px)", minWidth: isMobile ? "auto" : 1024 }}>
         <Sidebar currentSub={sub} onNavTo={navTo} sidebarOpen={sidebarOpen} />
