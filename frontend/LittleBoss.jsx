@@ -2113,7 +2113,7 @@ function ProfilePage({ toast, onLogout }) {
                   <div style={{ fontSize: 12, color: C.textLight, marginBottom: 10 }}>{user.email}</div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => fileInputRef.current?.click()} style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, fontWeight: 600, cursor: "pointer", background: C.purpleBg, color: C.purple, border: "none", fontFamily: "inherit" }}>사진 변경</button>
-                    <button onClick={() => setProfileImage(null)} style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, fontWeight: 600, cursor: "pointer", background: C.bg, color: C.textMid, border: "none", fontFamily: "inherit" }}>삭제</button>
+                    <button onClick={() => { setProfileImage(null); localStorage.removeItem("profileImage"); window.dispatchEvent(new CustomEvent("profileImageUpdated", { detail: null })); }} style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, fontWeight: 600, cursor: "pointer", background: C.bg, color: C.textMid, border: "none", fontFamily: "inherit" }}>삭제</button>
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" onChange={handleImageChange} style={{ display: "none" }} />
                 </div>
@@ -2302,7 +2302,13 @@ export default function App() {
   const titleMap = { "sub-home":"대시보드","sub-upload":"문서 업로드","sub-schedule":"일정 관리","sub-ongoing":"진행 중인 문서","sub-expired":"마감된 문서","sub-profile":"내 정보", "schedule-detail":"일정 상세", "doc-detail":"문서 상세" };
 
   const handleLogin = (m) => { setPage("app"); setSub("sub-home"); toast(m); };
-  const handleLogout = () => { setPage("login"); toast("로그아웃됐어요"); };
+  const handleLogout = () => {
+    // 세션·사용자 데이터 정리 (다음 사용자에게 이전 정보가 남지 않도록)
+    localStorage.clear();
+    window.dispatchEvent(new CustomEvent("profileImageUpdated", { detail: null }));
+    setPage("login");
+    toast("로그아웃됐어요");
+  };
   const navTo = (s, detailDay, data) => { if(s === "schedule-detail" || s === "doc-detail") setPrevSub(sub); setSub(s); if(detailDay) { if(typeof detailDay === 'number') setScheduleDetailDay(detailDay); else setScheduleDetailTitle(detailDay); } if(data) setDocDetailData(data); if(window.innerWidth < 768) setSidebarOpen(false); };
 
   // 히스토리 관리
