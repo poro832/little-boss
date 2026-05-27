@@ -564,6 +564,12 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
     };
   }, []);
   const { docs: notifDocs } = useDocuments();
+  const isMobile = useIsMobile();
+  // 가장 임박한 마감(안 지난 것 중 D-day 최소) — 헤더 칩에 표시
+  const upcoming = notifDocs
+    .filter(d => d.status === "done" && d.deadlineDate && !ddayInfo(d.deadlineDate).isPast)
+    .map(d => ({ d, dd: ddayInfo(d.deadlineDate) }))
+    .sort((a, b) => a.dd.days - b.dd.days)[0] || null;
   const notificationsRaw = [];
   let nid = 1;
   // 마감 임박(D-7 이내, 안 지남) 문서 알림
@@ -621,7 +627,21 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
         </div>
       ) : (
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, color: C.textMid, background: C.purpleBg, padding: "5px 12px", borderRadius: 20 }}>☀️ 오늘은 맑습니다</span>
+          {!isMobile && (upcoming ? (() => {
+            const urgent = upcoming.dd.days <= 3;
+            const t = upcoming.d.title.length > 14 ? upcoming.d.title.slice(0, 14) + "…" : upcoming.d.title;
+            return (
+              <span role="button" tabIndex={0}
+                onClick={() => onNavTo("schedule-detail", upcoming.d.title)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavTo("schedule-detail", upcoming.d.title); } }}
+                title={`${upcoming.d.title} · 마감 ${upcoming.d.deadlineDate}`}
+                style={{ fontSize: 12, fontWeight: 600, cursor: "pointer", color: urgent ? C.red : C.purple, background: urgent ? C.redBg : C.purpleBg, padding: "5px 12px", borderRadius: 20, whiteSpace: "nowrap" }}>
+                📌 {t} {upcoming.dd.text}
+              </span>
+            );
+          })() : (
+            <span style={{ fontSize: 12, color: C.textLight, background: C.bg, padding: "5px 12px", borderRadius: 20, whiteSpace: "nowrap" }}>📌 임박한 마감 없음</span>
+          ))}
           <div style={{ position: "relative" }}>
             <button aria-label="알림" onClick={e => { e.stopPropagation(); setNotifOpen(!notifOpen); setDd(false); }} style={{ width: 36, height: 36, borderRadius: 10, background: C.purpleBg, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: C.purple, position: "relative" }}>
               🔔{hasNotifs && <span style={{ position: "absolute", top: 7, right: 7, width: 7, height: 7, borderRadius: "50%", background: C.red, border: "1.5px solid white" }} />}
