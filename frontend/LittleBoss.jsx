@@ -254,7 +254,7 @@ function AuthLayout({ children }) {
   );
 }
 
-function GoogleBtn({ label, onLogin, onClick }) {
+function GoogleBtn({ label, onLogin, onClick, toast }) {
   const login = useGoogleLogin({
     scope: "openid email profile https://www.googleapis.com/auth/calendar.events",
     onSuccess: async (tokenResponse) => {
@@ -273,7 +273,7 @@ function GoogleBtn({ label, onLogin, onClick }) {
         onLogin?.("로그인됐어요 (사용자 정보 조회 실패)");
       }
     },
-    onError: () => alert("Google 로그인 실패. 다시 시도해주세요."),
+    onError: () => (toast ? toast("Google 로그인 실패. 다시 시도해주세요.") : null),
   });
 
   const handleClick = onLogin ? () => login() : onClick;
@@ -330,7 +330,7 @@ function SignupPage({ onLogin, goLogin, toast }) {
     <AuthLayout>
       <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6 }}>회원가입</h2>
       <p style={{ fontSize: 14, color: C.textLight, marginBottom: 28 }}>계정을 만들고 AI 행정 비서를 시작하세요</p>
-      <GoogleBtn label="Google로 계속하기" onLogin={onLogin} />
+      <GoogleBtn label="Google로 계속하기" onLogin={onLogin} toast={toast} />
       <DividerOr />
       <div style={{ marginBottom: 16 }}>
         <label style={S.label}>이름</label>
@@ -393,7 +393,7 @@ function LoginPage({ onLogin, goSignup, goForgotPassword, toast }) {
     <AuthLayout>
       <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6 }}>로그인</h2>
       <p style={{ fontSize: 14, color: C.textLight, marginBottom: 28 }}>계정에 로그인해 주세요</p>
-      <GoogleBtn label="Google 로그인" onLogin={onLogin} />
+      <GoogleBtn label="Google 로그인" onLogin={onLogin} toast={toast} />
       <DividerOr />
       <div style={{ marginBottom: 16 }}>
         <label style={S.label}>이메일</label>
@@ -1253,6 +1253,7 @@ function UploadPage({ onNavTo }) {
 
 function SchedulePage({ onNavTo }) {
   const { docs, loading, error } = useDocuments();
+  const isMobile = useIsMobile();
   const now = new Date();
   const [calY, setCalY] = useState(now.getFullYear());
   const [calM, setCalM] = useState(now.getMonth() + 1); // 1~12
@@ -1309,16 +1310,19 @@ function SchedulePage({ onNavTo }) {
             const bgColorMap = { incomplete: C.redBg, ongoing: C.ongoingBg, completed: C.greenBg };
             const colorMap = { incomplete: C.red, ongoing: C.ongoing, completed: C.green };
             return (
-              <div key={i} onClick={() => ev && onNavTo('schedule-detail', ev.title)} style={{ minHeight: 90, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", fontSize: 13, borderRadius: 8, cursor: ev ? "pointer" : "default", padding: 8,
+              <div key={i} title={ev ? ev.title : ""} onClick={() => ev && onNavTo('schedule-detail', ev.title)} style={{ minHeight: isMobile ? 46 : 90, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", fontSize: 13, borderRadius: 8, cursor: ev ? "pointer" : "default", padding: isMobile ? 4 : 8,
                 color: today ? C.todayText : ev ? colorMap[ev.status] : C.textMid,
                 background: ev ? bgColorMap[ev.status] : (today ? C.todayBg : "transparent"), fontWeight: (ev || today) ? 700 : 400, position: "relative", transition: "all 0.2s" }}
-                onMouseEnter={(e) => { if (ev) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)"; }}}
+                onMouseEnter={(e) => { if (ev && !isMobile) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)"; }}}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
                 <span style={{ fontSize: 12, fontWeight: 700 }}>{d || ""}</span>
-                {ev && (
+                {ev && !isMobile && (
                   <span style={{ fontSize: 9, fontWeight: 500, color: colorMap[ev.status], marginTop: 4, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
                     {ev.title}
                   </span>
+                )}
+                {ev && isMobile && (
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: colorMap[ev.status], marginTop: 3 }} />
                 )}
               </div>
             );
