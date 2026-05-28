@@ -218,7 +218,7 @@ function AuthLayout({ children }) {
   return (
     <div style={{ minHeight: "100vh", display: "flex" }}>
       {/* 좌: 브랜드 패널 */}
-      <div style={{ flex: "1 1 50%", background: `linear-gradient(150deg, ${C.purpleLight} 0%, ${C.purple} 45%, ${C.purpleDark} 100%)`, padding: "60px 56px", display: "flex", flexDirection: "column", justifyContent: "space-between", position: "relative", overflow: "hidden" }}>
+      <div style={{ flex: "1 1 60%", background: `linear-gradient(150deg, ${C.purpleLight} 0%, ${C.purple} 45%, ${C.purpleDark} 100%)`, padding: "60px 56px", display: "flex", flexDirection: "column", justifyContent: "space-between", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -90, right: -90, width: 300, height: 300, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
         <div style={{ position: "absolute", bottom: -130, left: -70, width: 340, height: 340, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
 
@@ -244,7 +244,7 @@ function AuthLayout({ children }) {
       </div>
 
       {/* 우: 로그인/회원가입 카드 */}
-      <div style={{ flex: "1 1 50%", background: C.white, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 32px" }}>
+      <div style={{ flex: "1 1 40%", background: C.white, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 32px" }}>
         <div style={{ width: "100%", maxWidth: 400 }}>
           {brandHeader}
           {children}
