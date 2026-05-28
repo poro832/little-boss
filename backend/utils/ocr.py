@@ -1,6 +1,7 @@
 """
 문서 텍스트 추출 레이어 - 다양한 형식 지원
-- PDF / 이미지(JPG·PNG·HEIC·GIF·WEBP·TIFF) : Textract(프로덕션) / PyMuPDF(로컬)
+- PDF : 텍스트 레이어 직접 추출(pypdf, 한글 정확) → 텍스트 없으면(스캔) Textract(프로덕션)/PyMuPDF(로컬)
+- 이미지(JPG·PNG·GIF·WEBP·TIFF) : Textract(프로덕션) / AI Vision
 - DOCX : python-docx 직접 추출 (OCR 불필요)
 - TXT  : 직접 디코딩
 - HWPX : zip+XML 파싱 (한글 신형식, stdlib만 사용)
@@ -44,7 +45,14 @@ def extract_text(file_path: str, filename: str) -> str:
         return "__UNSUPPORTED__"
 
     # 프로덕션
-    if ext in PDF_EXT or ext in {".png", ".jpg", ".jpeg", ".tiff", ".tif"}:
+    if ext in PDF_EXT:
+        # 1) 디지털 PDF는 텍스트 레이어를 직접 추출(한글 정확, OCR 불필요)
+        # 2) 텍스트가 없으면(스캔 PDF) Textract OCR로 폴백
+        text = _extract_pdf_text(file_path)
+        if text:
+            return text
+        return _extract_textract(file_path)
+    if ext in {".png", ".jpg", ".jpeg", ".tiff", ".tif"}:
         return _extract_textract(file_path)
     if ext in IMAGE_EXT:
         return "__IMAGE_FILE__"  # Textract 미지원 이미지 → AI Vision
@@ -119,6 +127,23 @@ def _extract_txt(file_path: str) -> str:
 
 
 # ── PDF / 이미지 ─────────────────────────────────────────
+
+def _extract_pdf_text(file_path: str):
+    """pypdf로 PDF 텍스트 레이어 직접 추출 (디지털 PDF·한글 정확, 순수 파이썬).
+    텍스트가 없거나(스캔 PDF) 실패하면 None 반환 → 호출부에서 Textract로 폴백."""
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        return None
+    try:
+        data = _read_bytes(file_path)
+        reader = PdfReader(io.BytesIO(data))
+        text = "\n".join((pg.extract_text() or "") for pg in reader.pages).strip()
+    except Exception as e:
+        print(f"pypdf 추출 실패: {e}")
+        return None
+    return text or None
+
 
 def _extract_pdf_local(file_path: str) -> str:
     try:
