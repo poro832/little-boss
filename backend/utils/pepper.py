@@ -9,6 +9,8 @@ import hmac
 import base64
 import hashlib
 
+ENV = os.getenv("ENV", "local")
+
 _pepper_cache = None
 
 
@@ -19,7 +21,7 @@ def reset_cache():
 
 
 def _load_pepper() -> bytes:
-    if os.getenv("ENV", "local") == "local":
+    if ENV == "local":
         local = os.getenv("LOCAL_PEPPER")
         if not local:
             raise RuntimeError("LOCAL_PEPPER 환경변수가 없습니다 (로컬 페퍼 필요).")
