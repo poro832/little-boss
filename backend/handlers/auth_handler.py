@@ -30,7 +30,6 @@ def _secure_hash(value: str, salt: str) -> str:
     return apply_pepper(_pbkdf2(value, salt))
 
 
-
 def _verify(password: str, user: dict) -> bool:
     """저장된 hash_version에 맞춰 비밀번호를 상수시간 비교."""
     salt = user.get("salt", "")

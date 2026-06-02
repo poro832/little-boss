@@ -113,15 +113,20 @@ def test_reset_flow_writes_v2():
     auth_handler.signup("홍길동", "a@b.com", "password123")
     # request_reset이 _send_reset_email로 코드를 보냄 → 코드를 가로채기 위해 패치
     captured = {}
+    original_send = auth_handler._send_reset_email
     auth_handler._send_reset_email = lambda to, code: captured.update(code=code)
-    auth_handler.request_reset("a@b.com")
-    code = captured["code"]
-    assert auth_handler.verify_reset("a@b.com", code)["success"] is True
-    r = auth_handler.confirm_reset("a@b.com", code, "resetpass789")
-    assert r["success"] is True
-    rec = _STORE["a@b.com"]
-    assert rec["hash_version"] == 2
-    assert auth_handler.login("a@b.com", "resetpass789")["success"] is True
+    try:
+        auth_handler.request_reset("a@b.com")
+        code = captured["code"]
+        assert auth_handler.verify_reset("a@b.com", code)["success"] is True
+        r = auth_handler.confirm_reset("a@b.com", code, "resetpass789")
+        assert r["success"] is True
+        rec = _STORE["a@b.com"]
+        assert rec["hash_version"] == 2
+        assert auth_handler.login("a@b.com", "resetpass789")["success"] is True
+        assert auth_handler.login("a@b.com", "password123")["success"] is False
+    finally:
+        auth_handler._send_reset_email = original_send
 
 
 if __name__ == "__main__":
