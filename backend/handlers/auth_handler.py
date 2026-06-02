@@ -11,16 +11,28 @@ import hashlib
 import secrets
 from datetime import datetime, timezone
 from utils.storage import get_user, save_user
+from utils.pepper import apply_pepper
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 PBKDF2_ROUNDS = 100_000
+HASH_VERSION = 2  # v1=PBKDF2만(레거시), v2=PBKDF2+KMS 페퍼
 RESET_CODE_TTL = 600  # 인증 코드 유효시간(초) = 10분
 
 
-def _hash_pw(password: str, salt: str) -> str:
+def _pbkdf2(password: str, salt: str) -> str:
     return hashlib.pbkdf2_hmac(
         "sha256", password.encode("utf-8"), salt.encode("utf-8"), PBKDF2_ROUNDS
     ).hex()
+
+
+def _secure_hash(value: str, salt: str) -> str:
+    """현재 버전(v2) 해시: PBKDF2 출력에 KMS 페퍼 HMAC을 적용."""
+    return apply_pepper(_pbkdf2(value, salt))
+
+
+# 임시 하위 호환 별칭 — login/change_password/request_reset/verify_reset/confirm_reset가
+# Task 3·4에서 교체될 때까지 기존 _hash_pw 참조가 동작하도록 유지
+_hash_pw = _pbkdf2
 
 
 def signup(name: str, email: str, password: str) -> dict:
@@ -43,8 +55,9 @@ def signup(name: str, email: str, password: str) -> dict:
         "user_id": email,
         "email": email,
         "name": name,
-        "password_hash": _hash_pw(password, salt),
+        "password_hash": _secure_hash(password, salt),
         "salt": salt,
+        "hash_version": HASH_VERSION,
         "auth_type": "email",
         "created_at": datetime.now(timezone.utc).isoformat(),
     })

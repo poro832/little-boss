@@ -4,6 +4,30 @@ os.environ["LOCAL_PEPPER"] = "test-pepper-AAA"
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils import pepper
+from handlers import auth_handler
+
+# in-memory user store로 storage 대체
+_STORE = {}
+auth_handler.get_user = lambda uid: _STORE.get(uid)
+auth_handler.save_user = lambda data: _STORE.__setitem__(data["user_id"], data)
+
+
+def _reset_store():
+    _STORE.clear()
+    os.environ["LOCAL_PEPPER"] = "test-pepper-AAA"
+    pepper.reset_cache()
+
+
+def test_signup_stores_v2_hash():
+    _reset_store()
+    r = auth_handler.signup("홍길동", "a@b.com", "password123")
+    assert r["success"] is True
+    rec = _STORE["a@b.com"]
+    assert rec["hash_version"] == 2
+    # 저장된 해시는 PBKDF2-only가 아니라 페퍼 HMAC이 적용돼 있어야 함
+    pbkdf2_only = auth_handler._pbkdf2("password123", rec["salt"])
+    assert rec["password_hash"] != pbkdf2_only
+    assert rec["password_hash"] == auth_handler._secure_hash("password123", rec["salt"])
 
 
 def test_apply_pepper_is_deterministic_and_hex():
@@ -44,6 +68,7 @@ def test_missing_local_pepper_raises():
 
 
 if __name__ == "__main__":
+    test_signup_stores_v2_hash()
     test_apply_pepper_is_deterministic_and_hex()
     test_apply_pepper_changes_with_pepper()
     test_missing_local_pepper_raises()
