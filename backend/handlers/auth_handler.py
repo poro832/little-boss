@@ -35,6 +35,16 @@ def _secure_hash(value: str, salt: str) -> str:
 _hash_pw = _pbkdf2
 
 
+def _verify(password: str, user: dict) -> bool:
+    """저장된 hash_version에 맞춰 비밀번호를 상수시간 비교."""
+    salt = user.get("salt", "")
+    stored = user.get("password_hash", "")
+    if user.get("hash_version") == HASH_VERSION:
+        return secrets.compare_digest(_secure_hash(password, salt), stored)
+    # 레거시 v1: PBKDF2만
+    return secrets.compare_digest(_pbkdf2(password, salt), stored)
+
+
 def signup(name: str, email: str, password: str) -> dict:
     """회원가입. 반환: {success, user_id, name, email} 또는 {success:False, message, code}"""
     name = (name or "").strip()
@@ -77,8 +87,17 @@ def login(email: str, password: str) -> dict:
     fail = {"success": False, "message": "이메일 또는 비밀번호가 올바르지 않습니다.", "code": 401}
     if not user or user.get("auth_type") != "email":
         return fail
-    if not secrets.compare_digest(_hash_pw(password, user["salt"]), user["password_hash"]):
+    if not _verify(password, user):
         return fail
+
+    # 레거시(v1) 유저는 로그인 성공 시 v2로 투명 승격 (멱등; 실패해도 로그인은 유지)
+    if user.get("hash_version") != HASH_VERSION:
+        try:
+            user["password_hash"] = _secure_hash(password, user["salt"])
+            user["hash_version"] = HASH_VERSION
+            save_user(user)
+        except Exception as e:
+            print(f"[PEPPER_MIGRATE_WARN] {user.get('user_id')}: {e}")
 
     return {
         "success": True,
