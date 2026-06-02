@@ -1,6 +1,6 @@
 """
 이메일/비밀번호 인증 핸들러
-- 비밀번호: hashlib.pbkdf2_hmac (stdlib, 외부 의존성 0)
+- 비밀번호: PBKDF2-HMAC-SHA256 + KMS 페퍼 HMAC(v2). utils.pepper 사용
 - 이메일 가입자는 user_id = 이메일 (구글 가입자는 Google sub → 충돌 없음)
 - 구글 로그인과 동일 모델: 백엔드 토큰 검증 없음, 프론트가 user_id 보관
 """
@@ -29,10 +29,6 @@ def _secure_hash(value: str, salt: str) -> str:
     """현재 버전(v2) 해시: PBKDF2 출력에 KMS 페퍼 HMAC을 적용."""
     return apply_pepper(_pbkdf2(value, salt))
 
-
-# 임시 하위 호환 별칭 — login/change_password/request_reset/verify_reset/confirm_reset가
-# Task 3·4에서 교체될 때까지 기존 _hash_pw 참조가 동작하도록 유지
-_hash_pw = _pbkdf2
 
 
 def _verify(password: str, user: dict) -> bool:
@@ -139,13 +135,14 @@ def change_password(user_id: str, current_password: str, new_password: str) -> d
     user = get_user(user_id) if user_id else None
     if not user or user.get("auth_type") != "email":
         return {"success": False, "message": "비밀번호를 변경할 수 없는 계정입니다.", "code": 400}
-    if not secrets.compare_digest(_hash_pw(current_password or "", user["salt"]), user["password_hash"]):
+    if not _verify(current_password or "", user):
         return {"success": False, "message": "현재 비밀번호가 올바르지 않습니다.", "code": 401}
     if len(new_password or "") < 8:
         return {"success": False, "message": "새 비밀번호는 8자 이상이어야 합니다.", "code": 400}
     salt = secrets.token_hex(16)
     user["salt"] = salt
-    user["password_hash"] = _hash_pw(new_password, salt)
+    user["password_hash"] = _secure_hash(new_password, salt)
+    user["hash_version"] = HASH_VERSION
     save_user(user)
     return {"success": True, "message": "비밀번호가 변경되었습니다."}
 
@@ -205,7 +202,7 @@ def request_reset(email: str) -> dict:
     user = get_user(email)
     if user and user.get("auth_type") == "email":
         code = f"{secrets.randbelow(1_000_000):06d}"
-        user["reset_code"] = _hash_pw(code, user["salt"])  # 코드도 해시로 저장
+        user["reset_code"] = _secure_hash(code, user["salt"])  # 코드도 페퍼 해시로 저장
         user["reset_expires"] = int(time.time()) + RESET_CODE_TTL
         save_user(user)
         _send_reset_email(email, code)
@@ -220,7 +217,7 @@ def verify_reset(email: str, code: str) -> dict:
         return {"success": False, "message": "인증 코드를 먼저 요청해주세요.", "code": 400}
     if int(time.time()) > int(user["reset_expires"]):
         return {"success": False, "message": "인증 코드가 만료되었습니다. 다시 요청해주세요.", "code": 400}
-    if not secrets.compare_digest(_hash_pw(code or "", user["salt"]), user["reset_code"]):
+    if not secrets.compare_digest(_secure_hash(code or "", user["salt"]), user["reset_code"]):
         return {"success": False, "message": "인증 코드가 올바르지 않습니다.", "code": 401}
     return {"success": True, "message": "인증되었습니다."}
 
@@ -235,7 +232,8 @@ def confirm_reset(email: str, code: str, new_password: str) -> dict:
     user = get_user((email or "").strip().lower())
     salt = secrets.token_hex(16)
     user["salt"] = salt
-    user["password_hash"] = _hash_pw(new_password, salt)
+    user["password_hash"] = _secure_hash(new_password, salt)
+    user["hash_version"] = HASH_VERSION
     user.pop("reset_code", None)
     user.pop("reset_expires", None)
     save_user(user)

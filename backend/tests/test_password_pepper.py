@@ -97,6 +97,33 @@ def test_v1_user_is_migrated_on_login():
     assert auth_handler.login("old@b.com", "legacy123x")["success"] is False
 
 
+def test_change_password_writes_v2():
+    _reset_store()
+    auth_handler.signup("홍길동", "a@b.com", "password123")
+    r = auth_handler.change_password("a@b.com", "password123", "newpass456")
+    assert r["success"] is True
+    rec = _STORE["a@b.com"]
+    assert rec["hash_version"] == 2
+    assert auth_handler.login("a@b.com", "newpass456")["success"] is True
+    assert auth_handler.login("a@b.com", "password123")["success"] is False
+
+
+def test_reset_flow_writes_v2():
+    _reset_store()
+    auth_handler.signup("홍길동", "a@b.com", "password123")
+    # request_reset이 _send_reset_email로 코드를 보냄 → 코드를 가로채기 위해 패치
+    captured = {}
+    auth_handler._send_reset_email = lambda to, code: captured.update(code=code)
+    auth_handler.request_reset("a@b.com")
+    code = captured["code"]
+    assert auth_handler.verify_reset("a@b.com", code)["success"] is True
+    r = auth_handler.confirm_reset("a@b.com", code, "resetpass789")
+    assert r["success"] is True
+    rec = _STORE["a@b.com"]
+    assert rec["hash_version"] == 2
+    assert auth_handler.login("a@b.com", "resetpass789")["success"] is True
+
+
 if __name__ == "__main__":
     test_signup_stores_v2_hash()
     test_apply_pepper_is_deterministic_and_hex()
@@ -104,4 +131,6 @@ if __name__ == "__main__":
     test_missing_local_pepper_raises()
     test_login_success_and_reject()
     test_v1_user_is_migrated_on_login()
+    test_change_password_writes_v2()
+    test_reset_flow_writes_v2()
     print("OK")
