@@ -12,6 +12,7 @@ import secrets
 from datetime import datetime, timezone
 from utils.storage import get_user, save_user
 from utils.pepper import apply_pepper
+from utils.notify_email import subscribe_user
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 PBKDF2_ROUNDS = 100_000
@@ -65,6 +66,7 @@ def signup(name: str, email: str, password: str) -> dict:
         "hash_version": HASH_VERSION,
         "auth_type": "email",
         "created_at": datetime.now(timezone.utc).isoformat(),
+        "notify_email_subscribed": subscribe_user(email, email),  # best-effort(실패/로컬이면 False)
     })
     return {"success": True, "user_id": email, "name": name, "email": email}
 
@@ -93,6 +95,12 @@ def login(email: str, password: str) -> dict:
             save_user(user)
         except Exception as e:
             print(f"[PEPPER_MIGRATE_WARN] {user.get('user_id')}: {e}")
+
+    # 기존 가입자(구독 플래그 없음) 지연 구독 — best-effort
+    if not user.get("notify_email_subscribed"):
+        if subscribe_user(email, user["user_id"]):
+            user["notify_email_subscribed"] = True
+            save_user(user)
 
     return {
         "success": True,
