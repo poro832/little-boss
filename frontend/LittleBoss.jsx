@@ -1077,12 +1077,20 @@ function UploadPage({ onNavTo }) {
           setCalMsg("📅 캘린더에 일정 등록 중...");
           try {
             const { data: cal } = await registerCalendar(data.doc_id, token);
-            setCalMsg(cal.success ? `📅 ${cal.message}` : `캘린더 등록 실패: ${cal.message}`);
+            const results = cal.created_events || [];
+            const allFailed = results.length > 0 && results.every((r) => r.status !== "created");
+            if (allFailed) {
+              // 토큰 만료 등으로 전부 실패 → 파일 처리 시점에서만 토큰 정리(lazy)
+              localStorage.removeItem("user_token");
+              setCalMsg("Google 연결이 만료됐어요. 설정에서 다시 연결해주세요.");
+            } else {
+              setCalMsg(cal.success ? `📅 ${cal.message}` : `캘린더 등록 실패: ${cal.message}`);
+            }
           } catch (er) {
             setCalMsg("캘린더 자동 등록 실패: " + (er.response?.data?.message || er.message));
           }
         } else if (evCount > 0 && !token) {
-          setCalMsg("ℹ️ Google 로그인하면 일정이 캘린더에 자동 등록됩니다.");
+          setCalMsg("ℹ️ 설정에서 Google 캘린더를 연결하면 일정이 자동 등록됩니다.");
         }
       } catch (e) {
         setErrMsg(`${file.name}: ${e.message || "처리 실패"}`);
@@ -1203,7 +1211,7 @@ function UploadPage({ onNavTo }) {
                     <button
                       onClick={async () => {
                         const token = localStorage.getItem("user_token");
-                        if (!token) { setCalMsg("ℹ️ Google 로그인하면 일정이 캘린더에 등록됩니다."); return; }
+                        if (!token) { setCalMsg("ℹ️ 설정에서 Google 캘린더를 연결하면 일정이 등록됩니다."); return; }
                         setCalMsg("📅 캘린더에 일정 등록 중...");
                         try {
                           const { data } = await registerCalendar(analysis.doc_id, token);
