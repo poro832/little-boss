@@ -296,7 +296,7 @@ function ConnectGoogleCalendar({ toast, label = "Google 캘린더 연결하기" 
     onError: () => toast?.("Google 캘린더 연결 실패. 다시 시도해주세요."),
   });
   return (
-    <button onClick={() => connect()} style={{ width: "100%", padding: 13, borderRadius: 10, fontSize: 14, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", background: "white", border: "1.5px solid " + C.border, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+    <button onClick={() => connect()} style={{ width: "100%", padding: 13, borderRadius: 10, fontSize: 14, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", background: "white", border: "1.5px solid " + C.border, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 }}>
       <GoogleIcon /> {label}
     </button>
   );
