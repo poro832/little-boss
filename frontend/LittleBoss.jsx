@@ -2347,7 +2347,8 @@ function ProfilePage({ toast, onLogout }) {
 // ── Main App ──
 export default function App() {
   const params = new URLSearchParams(window.location.search);
-  const [page, setPage] = useState(params.get("page") || "login"); // "signup" | "login" | "app"
+  // 새로고침해도 로그인 유지: URL param 우선, 없으면 user_id 존재로 판단(로그아웃 시 localStorage.clear로 해제됨)
+  const [page, setPage] = useState(params.get("page") || (localStorage.getItem("user_id") ? "app" : "login")); // "signup" | "login" | "app"
   const [sub, setSub] = useState(params.get("sub") || "sub-home");
   const [prevSub, setPrevSub] = useState("sub-home");
   const [scheduleDetailDay, setScheduleDetailDay] = useState(null);
