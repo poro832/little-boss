@@ -284,14 +284,15 @@ function GoogleBtn({ label, onLogin, onClick, toast }) {
   );
 }
 
-function ConnectGoogleCalendar({ toast, label = "Google 캘린더 연결하기" }) {
+function ConnectGoogleCalendar({ toast, onConnected, label = "Google 캘린더 연결하기" }) {
   const connect = useGoogleLogin({
     scope: "https://www.googleapis.com/auth/calendar.events",
+    prompt: "select_account",  // 항상 계정 선택창을 띄워 의도한 계정으로 연결되게
     onSuccess: (tokenResponse) => {
       // 신원은 안 건드리고 캘린더 쓰기용 토큰만 저장 — 캘린더 스코프만 요청해 동의창 최소화
       localStorage.setItem("user_token", tokenResponse.access_token);
       toast?.("Google 캘린더가 연결됐어요 📅");
-      setTimeout(() => window.location.reload(), 600);
+      onConnected?.();  // reload 금지: 세션이 URL 기반이라 리로드하면 로그인 화면으로 튕김 → 상태만 갱신
     },
     onError: () => toast?.("Google 캘린더 연결 실패. 다시 시도해주세요."),
   });
@@ -1895,6 +1896,7 @@ function ProfilePage({ toast, onLogout }) {
   const userId = localStorage.getItem("user_id") || user.email;
   const isEmailUser = (localStorage.getItem("user_id") || "").includes("@"); // 이메일 가입자는 user_id가 이메일(@ 포함), 구글 로그인은 숫자 sub
   const [settingsTab, setSettingsTab] = useState("profile");
+  const [calConnected, setCalConnected] = useState(!!localStorage.getItem("user_token")); // 캘린더 연동 상태 — 리로드 없이 갱신해 세션 유지
   const [profileImage, setProfileImage] = useState(null);
   const [tempImage, setTempImage] = useState(null);
   const [showImageEditor, setShowImageEditor] = useState(false);
@@ -2227,7 +2229,6 @@ function ProfilePage({ toast, onLogout }) {
             </div>
           )}
           {settingsTab === "calendar" && (() => {
-            const calConnected = !!localStorage.getItem("user_token");
             return (
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Google 캘린더 연동</div>
@@ -2242,7 +2243,7 @@ function ProfilePage({ toast, onLogout }) {
                       <span style={{ fontSize: 20 }}>📅</span>
                       <div><div style={{ fontSize: 13, fontWeight: 600, color: C.textMid }}>미연동</div><div style={{ fontSize: 12, color: C.textLight }}>아래 버튼으로 Google 캘린더를 연결하세요.</div></div>
                     </div>
-                    <ConnectGoogleCalendar toast={toast} />
+                    <ConnectGoogleCalendar toast={toast} onConnected={() => setCalConnected(true)} />
                   </>
                 )}
                 <div style={{ fontSize: 13, color: C.textMid, lineHeight: 1.7, padding: "8px 0" }}>
@@ -2251,7 +2252,7 @@ function ProfilePage({ toast, onLogout }) {
                   · 분석 결과 화면에서 <b>"캘린더에 다시 등록"</b>으로 재등록할 수 있습니다.
                 </div>
                 {calConnected && (
-                  <button onClick={() => { localStorage.removeItem("user_token"); window.location.reload(); }} style={{ ...S.btnOutline, marginTop: 16, color: C.red, borderColor: C.red }}>캘린더 연결 해제</button>
+                  <button onClick={() => { localStorage.removeItem("user_token"); setCalConnected(false); toast?.("캘린더 연결을 해제했어요"); }} style={{ ...S.btnOutline, marginTop: 16, color: C.red, borderColor: C.red }}>캘린더 연결 해제</button>
                 )}
               </div>
             );
