@@ -72,6 +72,13 @@ def process(doc_id: str) -> dict:
         except Exception as e:
             print(f"[SLACK_NOTIFY_ERROR] {e}")
 
+        # 이메일 가입 유저면 가입 이메일로 완료 알림 (best-effort)
+        try:
+            from utils.notify_email import notify_done as notify_email_done
+            notify_email_done(doc)
+        except Exception as e:
+            print(f"[EMAIL_NOTIFY_ERROR] {e}")
+
         return {
             "success": True,
             "doc_id": doc_id,
