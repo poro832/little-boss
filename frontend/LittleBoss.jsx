@@ -2228,10 +2228,13 @@ function ProfilePage({ toast, onLogout }) {
                     <div><div style={{ fontSize: 13, fontWeight: 600, color: C.green }}>연동 완료</div><div style={{ fontSize: 12, color: C.textLight }}>{user.email || "Google 계정"}</div></div>
                   </div>
                 ) : (
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: C.bg, borderRadius: 10, marginBottom: 16 }}>
-                    <span style={{ fontSize: 20 }}>📅</span>
-                    <div><div style={{ fontSize: 13, fontWeight: 600, color: C.textMid }}>미연동</div><div style={{ fontSize: 12, color: C.textLight }}>Google 로그인 시 캘린더가 자동 연결됩니다.</div></div>
-                  </div>
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: C.bg, borderRadius: 10, marginBottom: 16 }}>
+                      <span style={{ fontSize: 20 }}>📅</span>
+                      <div><div style={{ fontSize: 13, fontWeight: 600, color: C.textMid }}>미연동</div><div style={{ fontSize: 12, color: C.textLight }}>아래 버튼으로 Google 캘린더를 연결하세요.</div></div>
+                    </div>
+                    <ConnectGoogleCalendar toast={toast} />
+                  </>
                 )}
                 <div style={{ fontSize: 13, color: C.textMid, lineHeight: 1.7, padding: "8px 0" }}>
                   · 문서 분석이 완료되면 일정이 Google 캘린더에 <b>자동 등록</b>됩니다.<br />
