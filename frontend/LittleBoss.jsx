@@ -1080,7 +1080,8 @@ function UploadPage({ onNavTo }) {
             const results = cal.created_events || [];
             const allFailed = results.length > 0 && results.every((r) => r.status !== "created");
             if (allFailed) {
-              // 토큰 만료 등으로 전부 실패 → 파일 처리 시점에서만 토큰 정리(lazy)
+              // 전부 실패 → 토큰 만료로 간주하고 파일 처리 시점에서만 정리(lazy).
+              // 만료(401) 외 사유(400/429 등)와 구별 불가하나, 오탐은 드물고 재연결로 복구 가능.
               localStorage.removeItem("user_token");
               setCalMsg("Google 연결이 만료됐어요. 설정에서 다시 연결해주세요.");
             } else {
