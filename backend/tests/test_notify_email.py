@@ -9,7 +9,7 @@ class _FakeSNS:
 import boto3
 boto3.client = lambda *a, **k: _FakeSNS()
 
-TOPIC = "arn:aws:sns:ap-northeast-2:443370697536:littleboss-user-notifications"
+TOPIC = "arn:aws:sns:ap-northeast-2:123456789012:littleboss-user-notifications"
 
 def _prod():
     os.environ["ENV"] = "production"

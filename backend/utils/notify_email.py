@@ -32,7 +32,7 @@ def subscribe_user(email: str, user_id: str) -> bool:
             Attributes={"FilterPolicy": json.dumps({"user_id": [str(user_id)]})},
             ReturnSubscriptionArn=True,
         )
-        return True
+        return True  # SNS가 요청 수락 — 유저가 확인메일 클릭 전엔 실제 발송은 안 됨
     except Exception as e:
         print(f"[NOTIFY_SUBSCRIBE_ERROR] {email}: {e}")
         return False
@@ -68,7 +68,7 @@ def notify_done(doc: dict) -> bool:
         return False
     try:
         u = get_user(user_id)
-        if u and u.get("notif_settings", {}).get("mail", True) is False:
+        if u and (u.get("notif_settings") or {}).get("mail", True) is False:
             return False
         import boto3
         boto3.client("sns").publish(
