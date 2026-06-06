@@ -284,6 +284,24 @@ function GoogleBtn({ label, onLogin, onClick, toast }) {
   );
 }
 
+function ConnectGoogleCalendar({ toast, label = "Google 캘린더 연결하기" }) {
+  const connect = useGoogleLogin({
+    scope: "openid email profile https://www.googleapis.com/auth/calendar.events",
+    onSuccess: (tokenResponse) => {
+      // 신원(user_id/email/name)은 건드리지 않고 캘린더 쓰기용 access token만 저장
+      localStorage.setItem("user_token", tokenResponse.access_token);
+      toast?.("Google 캘린더가 연결됐어요 📅");
+      setTimeout(() => window.location.reload(), 600);
+    },
+    onError: () => toast?.("Google 캘린더 연결 실패. 다시 시도해주세요."),
+  });
+  return (
+    <button onClick={() => connect()} style={{ width: "100%", padding: 13, borderRadius: 10, fontSize: 14, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", background: "white", border: "1.5px solid " + C.border, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+      <GoogleIcon /> {label}
+    </button>
+  );
+}
+
 function DividerOr() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, color: C.textLight, fontSize: 13, margin: "18px 0" }}>
