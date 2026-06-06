@@ -1884,7 +1884,7 @@ function ProfilePage({ toast, onLogout }) {
   const user = getUser();
   const isMobile = useIsMobile();
   const userId = localStorage.getItem("user_id") || user.email;
-  const isEmailUser = !localStorage.getItem("user_token"); // 구글 로그인 사용자는 토큰 보유
+  const isEmailUser = (localStorage.getItem("user_id") || "").includes("@"); // 이메일 가입자는 user_id가 이메일(@ 포함), 구글 로그인은 숫자 sub
   const [settingsTab, setSettingsTab] = useState("profile");
   const [profileImage, setProfileImage] = useState(null);
   const [tempImage, setTempImage] = useState(null);
