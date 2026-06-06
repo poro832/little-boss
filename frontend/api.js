@@ -117,23 +117,43 @@ export function toScreenDoc(doc) {
   };
 }
 
-// 특정 연/월의 일별 마감 이벤트 맵: { 22: { status, title, doc_id } }
+// 문서들 → 개별 마감 이벤트 목록 (문서당 deadlines 전부 전개)
+// title=표시용(마감 설명), navTitle=상세 이동용(문서종류 — ScheduleDetailPage가 title로 매칭)
+export function deadlineEvents(screenDocs) {
+  const out = [];
+  (screenDocs || []).forEach((d) => {
+    (d.deadlines || []).forEach((dl) => {
+      if (!dl || !dl.date) return;
+      out.push({
+        doc_id: d.doc_id,
+        navTitle: d.title,
+        title: dl.description || d.title,
+        date: dl.date,
+        urgency: dl.urgency || "normal",
+        checks: d.checks || [],
+        total: d.total || 0,
+      });
+    });
+  });
+  return out;
+}
+
+// 특정 연/월의 일별 마감 이벤트 맵: { 22: { status, title, navTitle, doc_id } }
 // status: completed(전체 완료) | ongoing(진행중) | incomplete(마감지남·미완)
 export function deadlinesForMonth(screenDocs, year, month1to12) {
   const map = {};
-  (screenDocs || []).forEach((d) => {
-    if (!d.deadlineDate) return;
-    const dt = new Date(d.deadlineDate);
+  const rank = { ongoing: 3, incomplete: 2, completed: 1 };
+  deadlineEvents(screenDocs).forEach((e) => {
+    const dt = new Date(e.date);
     if (isNaN(dt)) return;
     if (dt.getFullYear() !== year || dt.getMonth() + 1 !== month1to12) return;
     const day = dt.getDate();
-    const doneAll = d.total > 0 && d.checks.filter((c) => c.done).length === d.total;
-    const past = ddayInfo(d.deadlineDate).isPast;
+    const doneAll = e.total > 0 && e.checks.filter((c) => c.done).length === e.total;
+    const past = ddayInfo(e.date).isPast;
     const status = doneAll ? "completed" : past ? "incomplete" : "ongoing";
     // 같은 날 여러 건이면 진행중 > 미완 > 완료 우선
-    const rank = { ongoing: 3, incomplete: 2, completed: 1 };
     if (!map[day] || rank[status] > rank[map[day].status]) {
-      map[day] = { status, title: d.title, doc_id: d.doc_id };
+      map[day] = { status, title: e.title, navTitle: e.navTitle, doc_id: e.doc_id };
     }
   });
   return map;
