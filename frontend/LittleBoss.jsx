@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 import logo from "./logo.svg";
-import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem, deadlinesForMonth, signup as apiSignup, emailLogin as apiEmailLogin, deleteDocument, updateProfile, changePassword, updateNotifSettings, deleteAccount, requestReset, verifyReset, confirmReset } from "./api";
+import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem, deadlinesForMonth, deadlineEvents, signup as apiSignup, emailLogin as apiEmailLogin, deleteDocument, updateProfile, changePassword, updateNotifSettings, deleteAccount, requestReset, verifyReset, confirmReset } from "./api";
 
 
 // ── Color tokens ──
@@ -585,9 +585,9 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
   const { docs: notifDocs } = useDocuments();
   const isMobile = useIsMobile();
   // 가장 임박한 마감(안 지난 것 중 D-day 최소) — 헤더 칩에 표시
-  const upcoming = notifDocs
-    .filter(d => d.status === "done" && d.deadlineDate && !ddayInfo(d.deadlineDate).isPast)
-    .map(d => ({ d, dd: ddayInfo(d.deadlineDate) }))
+  const upcoming = deadlineEvents(notifDocs.filter(d => d.status === "done"))
+    .filter(e => e.date && !ddayInfo(e.date).isPast)
+    .map(e => ({ d: { title: e.title, navTitle: e.navTitle, deadlineDate: e.date }, dd: ddayInfo(e.date) }))
     .sort((a, b) => a.dd.days - b.dd.days)[0] || null;
   const notificationsRaw = [];
   let nid = 1;
@@ -651,8 +651,8 @@ function Header({ isLoggedIn, onLogout, onLogin, onSignup, onNavTo, sidebarOpen,
             const t = upcoming.d.title.length > 14 ? upcoming.d.title.slice(0, 14) + "…" : upcoming.d.title;
             return (
               <span role="button" tabIndex={0}
-                onClick={() => onNavTo("schedule-detail", upcoming.d.title)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavTo("schedule-detail", upcoming.d.title); } }}
+                onClick={() => onNavTo("schedule-detail", upcoming.d.navTitle)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavTo("schedule-detail", upcoming.d.navTitle); } }}
                 title={`${upcoming.d.title} · 마감 ${upcoming.d.deadlineDate}`}
                 style={{ fontSize: 12, fontWeight: 600, cursor: "pointer", color: urgent ? C.red : C.purple, background: urgent ? C.redBg : C.purpleBg, padding: "5px 12px", borderRadius: 20, whiteSpace: "nowrap" }}>
                 📌 {t} {upcoming.dd.text}
@@ -949,8 +949,8 @@ function Dashboard({ onNavTo }) {
               const isToday = d && year === _today.getFullYear() && month === _today.getMonth() + 1 && d === _today.getDate();
               return (
                 <div key={i} title={ev ? ev.title : ""} role={ev ? "button" : undefined} tabIndex={ev ? 0 : undefined}
-                  onClick={() => ev && onNavTo("schedule-detail", ev.title)}
-                  onKeyDown={(e) => { if (ev && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onNavTo("schedule-detail", ev.title); } }}
+                  onClick={() => ev && onNavTo("schedule-detail", ev.navTitle)}
+                  onKeyDown={(e) => { if (ev && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onNavTo("schedule-detail", ev.navTitle); } }}
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: st ? colorMap[st] : isToday ? C.todayText : C.textMid, fontWeight: st || isToday ? 600 : 400, width: 24, height: 24, borderRadius: "50%", background: st ? bgColorMap[st] : (isToday ? C.todayBg : "transparent"), margin: "0 auto", cursor: st ? "pointer" : "default" }}>
                   {d}
                 </div>
@@ -1319,14 +1319,13 @@ function SchedulePage({ onNavTo }) {
   const isToday = (d) => d === now.getDate() && calM === now.getMonth() + 1 && calY === now.getFullYear();
   const MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
   // 실제 문서의 마감 일정 목록 (가까운 순)
-  const scheduleList = docs
-    .filter(d => d.deadlineDate)
-    .map(d => {
-      const dd = ddayInfo(d.deadlineDate);
-      const dt = new Date(d.deadlineDate);
+  const scheduleList = deadlineEvents(docs)
+    .map(e => {
+      const dd = ddayInfo(e.date);
+      const dt = new Date(e.date);
       return {
-        doc_id: d.doc_id, title: d.title,
-        items: "· " + (d.checks.map(c => c.l).slice(0, 4).join(" · ") || "준비 서류 없음"),
+        doc_id: e.doc_id, date: e.date, title: e.title, navTitle: e.navTitle,
+        items: "· " + (e.checks.map(c => c.l).slice(0, 4).join(" · ") || "준비 서류 없음"),
         day: isNaN(dt) ? "-" : dt.getDate(),
         month: isNaN(dt) ? "" : MON[dt.getMonth()],
         dday: dd.text, passed: dd.isPast,
@@ -1358,7 +1357,7 @@ function SchedulePage({ onNavTo }) {
             const bgColorMap = { incomplete: C.redBg, ongoing: C.ongoingBg, completed: C.greenBg };
             const colorMap = { incomplete: C.red, ongoing: C.ongoing, completed: C.green };
             return (
-              <div key={i} title={ev ? ev.title : ""} onClick={() => ev && onNavTo('schedule-detail', ev.title)} style={{ minHeight: isMobile ? 46 : 90, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", fontSize: 13, borderRadius: 8, cursor: ev ? "pointer" : "default", padding: isMobile ? 4 : 8,
+              <div key={i} title={ev ? ev.title : ""} onClick={() => ev && onNavTo('schedule-detail', ev.navTitle)} style={{ minHeight: isMobile ? 46 : 90, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", fontSize: 13, borderRadius: 8, cursor: ev ? "pointer" : "default", padding: isMobile ? 4 : 8,
                 color: today ? C.todayText : ev ? colorMap[ev.status] : C.textMid,
                 background: ev ? bgColorMap[ev.status] : (today ? C.todayBg : "transparent"), fontWeight: (ev || today) ? 700 : 400, position: "relative", transition: "all 0.2s" }}
                 onMouseEnter={(e) => { if (ev && !isMobile) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)"; }}}
@@ -1400,7 +1399,7 @@ function SchedulePage({ onNavTo }) {
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {scheduleList.map(item => (
-          <div key={item.doc_id} onClick={() => onNavTo("schedule-detail", item.title)} style={{ background: "white", borderRadius: 12, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+          <div key={`${item.doc_id}_${item.date}`} onClick={() => onNavTo("schedule-detail", item.navTitle)} style={{ background: "white", borderRadius: 12, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
             <div style={{ minWidth: 56, textAlign: "center", background: item.passed ? C.bg : C.purpleBg, borderRadius: 10, padding: "8px 6px" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: item.passed ? C.textLight : C.purple, letterSpacing: "0.08em" }}>{item.month}</div>
               <div style={{ fontSize: 22, fontWeight: 700, color: item.passed ? C.textLight : C.purple, lineHeight: 1 }}>{item.day}</div>
@@ -2347,7 +2346,8 @@ function ProfilePage({ toast, onLogout }) {
 // ── Main App ──
 export default function App() {
   const params = new URLSearchParams(window.location.search);
-  const [page, setPage] = useState(params.get("page") || "login"); // "signup" | "login" | "app"
+  // 새로고침해도 로그인 유지: URL param 우선, 없으면 user_id 존재로 판단(로그아웃 시 localStorage.clear로 해제됨)
+  const [page, setPage] = useState(params.get("page") || (localStorage.getItem("user_id") ? "app" : "login")); // "signup" | "login" | "app"
   const [sub, setSub] = useState(params.get("sub") || "sub-home");
   const [prevSub, setPrevSub] = useState("sub-home");
   const [scheduleDetailDay, setScheduleDetailDay] = useState(null);
