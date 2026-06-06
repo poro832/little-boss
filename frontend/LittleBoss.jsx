@@ -286,9 +286,9 @@ function GoogleBtn({ label, onLogin, onClick, toast }) {
 
 function ConnectGoogleCalendar({ toast, label = "Google 캘린더 연결하기" }) {
   const connect = useGoogleLogin({
-    scope: "openid email profile https://www.googleapis.com/auth/calendar.events",
+    scope: "https://www.googleapis.com/auth/calendar.events",
     onSuccess: (tokenResponse) => {
-      // 신원(user_id/email/name)은 건드리지 않고 캘린더 쓰기용 access token만 저장
+      // 신원은 안 건드리고 캘린더 쓰기용 토큰만 저장 — 캘린더 스코프만 요청해 동의창 최소화
       localStorage.setItem("user_token", tokenResponse.access_token);
       toast?.("Google 캘린더가 연결됐어요 📅");
       setTimeout(() => window.location.reload(), 600);
