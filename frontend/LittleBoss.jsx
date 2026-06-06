@@ -284,6 +284,24 @@ function GoogleBtn({ label, onLogin, onClick, toast }) {
   );
 }
 
+function ConnectGoogleCalendar({ toast, label = "Google 캘린더 연결하기" }) {
+  const connect = useGoogleLogin({
+    scope: "https://www.googleapis.com/auth/calendar.events",
+    onSuccess: (tokenResponse) => {
+      // 신원은 안 건드리고 캘린더 쓰기용 토큰만 저장 — 캘린더 스코프만 요청해 동의창 최소화
+      localStorage.setItem("user_token", tokenResponse.access_token);
+      toast?.("Google 캘린더가 연결됐어요 📅");
+      setTimeout(() => window.location.reload(), 600);
+    },
+    onError: () => toast?.("Google 캘린더 연결 실패. 다시 시도해주세요."),
+  });
+  return (
+    <button onClick={() => connect()} style={{ width: "100%", padding: 13, borderRadius: 10, fontSize: 14, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", background: "white", border: "1.5px solid " + C.border, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 }}>
+      <GoogleIcon /> {label}
+    </button>
+  );
+}
+
 function DividerOr() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, color: C.textLight, fontSize: 13, margin: "18px 0" }}>
@@ -1059,12 +1077,21 @@ function UploadPage({ onNavTo }) {
           setCalMsg("📅 캘린더에 일정 등록 중...");
           try {
             const { data: cal } = await registerCalendar(data.doc_id, token);
-            setCalMsg(cal.success ? `📅 ${cal.message}` : `캘린더 등록 실패: ${cal.message}`);
+            const results = cal.created_events || [];
+            const allFailed = results.length > 0 && results.every((r) => r.status !== "created");
+            if (allFailed) {
+              // 전부 실패 → 토큰 만료로 간주하고 파일 처리 시점에서만 정리(lazy).
+              // 만료(401) 외 사유(400/429 등)와 구별 불가하나, 오탐은 드물고 재연결로 복구 가능.
+              localStorage.removeItem("user_token");
+              setCalMsg("Google 연결이 만료됐어요. 설정에서 다시 연결해주세요.");
+            } else {
+              setCalMsg(cal.success ? `📅 ${cal.message}` : `캘린더 등록 실패: ${cal.message}`);
+            }
           } catch (er) {
             setCalMsg("캘린더 자동 등록 실패: " + (er.response?.data?.message || er.message));
           }
         } else if (evCount > 0 && !token) {
-          setCalMsg("ℹ️ Google 로그인하면 일정이 캘린더에 자동 등록됩니다.");
+          setCalMsg("ℹ️ 설정에서 Google 캘린더를 연결하면 일정이 자동 등록됩니다.");
         }
       } catch (e) {
         setErrMsg(`${file.name}: ${e.message || "처리 실패"}`);
@@ -1185,7 +1212,7 @@ function UploadPage({ onNavTo }) {
                     <button
                       onClick={async () => {
                         const token = localStorage.getItem("user_token");
-                        if (!token) { setCalMsg("ℹ️ Google 로그인하면 일정이 캘린더에 등록됩니다."); return; }
+                        if (!token) { setCalMsg("ℹ️ 설정에서 Google 캘린더를 연결하면 일정이 등록됩니다."); return; }
                         setCalMsg("📅 캘린더에 일정 등록 중...");
                         try {
                           const { data } = await registerCalendar(analysis.doc_id, token);
@@ -1866,7 +1893,7 @@ function ProfilePage({ toast, onLogout }) {
   const user = getUser();
   const isMobile = useIsMobile();
   const userId = localStorage.getItem("user_id") || user.email;
-  const isEmailUser = !localStorage.getItem("user_token"); // 구글 로그인 사용자는 토큰 보유
+  const isEmailUser = (localStorage.getItem("user_id") || "").includes("@"); // 이메일 가입자는 user_id가 이메일(@ 포함), 구글 로그인은 숫자 sub
   const [settingsTab, setSettingsTab] = useState("profile");
   const [profileImage, setProfileImage] = useState(null);
   const [tempImage, setTempImage] = useState(null);
@@ -2210,10 +2237,13 @@ function ProfilePage({ toast, onLogout }) {
                     <div><div style={{ fontSize: 13, fontWeight: 600, color: C.green }}>연동 완료</div><div style={{ fontSize: 12, color: C.textLight }}>{user.email || "Google 계정"}</div></div>
                   </div>
                 ) : (
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: C.bg, borderRadius: 10, marginBottom: 16 }}>
-                    <span style={{ fontSize: 20 }}>📅</span>
-                    <div><div style={{ fontSize: 13, fontWeight: 600, color: C.textMid }}>미연동</div><div style={{ fontSize: 12, color: C.textLight }}>Google 로그인 시 캘린더가 자동 연결됩니다.</div></div>
-                  </div>
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: C.bg, borderRadius: 10, marginBottom: 16 }}>
+                      <span style={{ fontSize: 20 }}>📅</span>
+                      <div><div style={{ fontSize: 13, fontWeight: 600, color: C.textMid }}>미연동</div><div style={{ fontSize: 12, color: C.textLight }}>아래 버튼으로 Google 캘린더를 연결하세요.</div></div>
+                    </div>
+                    <ConnectGoogleCalendar toast={toast} />
+                  </>
                 )}
                 <div style={{ fontSize: 13, color: C.textMid, lineHeight: 1.7, padding: "8px 0" }}>
                   · 문서 분석이 완료되면 일정이 Google 캘린더에 <b>자동 등록</b>됩니다.<br />
