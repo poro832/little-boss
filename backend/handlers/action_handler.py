@@ -130,7 +130,7 @@ def notify_slack_done(doc: dict):
 
     cal = ""
     email = doc.get("user_id", "")
-    slack_user = doc.get("slack_user", "")
+    slack_user = doc.get("slack_user") or ""
     rt = get_refresh_token(email) if "@" in (email or "") else None
     if rt:
         from utils.slack_oauth import refresh_access_token, TokenExpiredError, build_connect_url
