@@ -6,6 +6,13 @@ import json
 import base64
 import urllib.request
 import urllib.parse
+import os
+import urllib.error
+
+
+class TokenExpiredError(Exception):
+    """Google refresh token 만료/철회 (invalid_grant)."""
+    pass
 
 
 def _b64e(b: bytes) -> str:
@@ -55,10 +62,27 @@ def refresh_access_token(client_id, client_secret, refresh_token) -> str:
         "client_id": client_id, "client_secret": client_secret,
         "refresh_token": refresh_token, "grant_type": "refresh_token",
     }).encode()
-    return json.loads(urllib.request.urlopen(
-        urllib.request.Request("https://oauth2.googleapis.com/token", data=data)).read())["access_token"]
+    try:
+        resp = urllib.request.urlopen(
+            urllib.request.Request("https://oauth2.googleapis.com/token", data=data))
+        return json.loads(resp.read())["access_token"]
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "ignore")
+        if e.code == 400 and "invalid_grant" in body:
+            raise TokenExpiredError(body)
+        raise
 
 
 def email_from_id_token(id_token: str) -> str:
     """id_token(JWT) payload에서 email 추출 (검증은 Google 교환에서 이미 수행됨)."""
     return json.loads(_b64d(id_token.split(".")[1])).get("email", "")
+
+
+def build_connect_url(slack_user: str, channel: str, thread_ts: str) -> str:
+    """Slack 사용자용 Google 캘린더 연동 OAuth URL (서명된 state 포함)."""
+    state = sign_state(os.environ["SLACK_SIGNING_SECRET"], slack_user, channel, thread_ts)
+    redirect = f"{os.environ['API_BASE']}/slack/google/callback"
+    return "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode({
+        "client_id": os.environ["GOOGLE_CLIENT_ID"], "redirect_uri": redirect,
+        "response_type": "code", "scope": "https://www.googleapis.com/auth/calendar.events email",
+        "access_type": "offline", "prompt": "consent", "state": state})

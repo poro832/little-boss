@@ -6,10 +6,9 @@ action_handler.notify_slack_done 이 담당한다. 미연결 사용자에겐 Goo
 """
 import os
 import json
-import urllib.parse
 from utils.slack import verify_signature, get_file_info, download_file, post_message
 from utils.slack_links import mark_event_seen, get_email_for_slack
-from utils.slack_oauth import sign_state
+from utils.slack_oauth import build_connect_url
 
 
 def _resp(code, body="ok"):
@@ -58,17 +57,12 @@ def _ingest(ev):
     email = get_email_for_slack(slack_user)
     user_id = email or f"slack:{slack_user}"
     result = process(filename, data, user_id, extra={
-        "source": "slack", "slack_channel": channel, "slack_thread_ts": ts})
+        "source": "slack", "slack_channel": channel, "slack_thread_ts": ts, "slack_user": slack_user})
     if not result.get("success"):
         post_message(token, channel, ts, f"⚠️ 처리 실패: {result.get('message')}")
         return
     if not email:
-        state = sign_state(os.environ["SLACK_SIGNING_SECRET"], slack_user, channel, ts)
-        redirect = f"{os.environ['API_BASE']}/slack/google/callback"
-        auth = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode({
-            "client_id": os.environ["GOOGLE_CLIENT_ID"], "redirect_uri": redirect,
-            "response_type": "code", "scope": "https://www.googleapis.com/auth/calendar.events email",
-            "access_type": "offline", "prompt": "consent", "state": state})
+        auth = build_connect_url(slack_user, channel, ts)
         post_message(token, channel, ts,
                      f"📎 문서 분석을 시작했어요. 일정을 *개인 Google 캘린더*에 자동 등록하려면 계정을 연결하세요:\n{auth}")
     else:
