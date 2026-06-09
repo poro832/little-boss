@@ -130,16 +130,26 @@ def notify_slack_done(doc: dict):
 
     cal = ""
     email = doc.get("user_id", "")
+    slack_user = doc.get("slack_user", "")
     rt = get_refresh_token(email) if "@" in (email or "") else None
     if rt:
+        from utils.slack_oauth import refresh_access_token, TokenExpiredError, build_connect_url
+        from utils.slack_links import delete_link
         try:
-            from utils.slack_oauth import refresh_access_token
             access = refresh_access_token(os.environ["GOOGLE_CLIENT_ID"], os.environ["GOOGLE_CLIENT_SECRET"], rt)
             r = handle_calendar(doc["doc_id"], access)
             cal = f"\n🗓️ 캘린더 {r.get('count', 0)}건 등록 완료"
+        except TokenExpiredError:
+            # 연동 만료/철회 → 죽은 연동 삭제 + 재연동 링크 안내
+            if slack_user:
+                delete_link(slack_user)
+                link = build_connect_url(slack_user, ch, ts)
+                cal = f"\n⚠️ Google 연결이 만료됐어요. 다시 연결해주세요:\n{link}"
+            else:
+                cal = "\n⚠️ Google 연결이 만료됐어요. 다음 업로드 때 다시 연결해주세요."
         except Exception as e:
             print(f"[SLACK_CAL_ERROR] {e}")
-            cal = "\n⚠️ 캘린더 등록 실패(연결이 만료됐으면 다음 업로드 때 재연결 안내를 드려요)"
+            cal = "\n⚠️ 캘린더 등록 실패 (잠시 후 다시 시도해주세요)"
     try:
         post_message(token, ch, ts, "\n".join(lines) + cal)
     except Exception as e:
