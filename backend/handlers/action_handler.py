@@ -140,12 +140,16 @@ def notify_slack_done(doc: dict):
             r = handle_calendar(doc["doc_id"], access)
             cal = f"\n🗓️ 캘린더 {r.get('count', 0)}건 등록 완료"
         except TokenExpiredError:
-            # 연동 만료/철회 → 죽은 연동 삭제 + 재연동 링크 안내
-            if slack_user:
-                delete_link(slack_user)
-                link = build_connect_url(slack_user, ch, ts)
-                cal = f"\n⚠️ Google 연결이 만료됐어요. 다시 연결해주세요:\n{link}"
-            else:
+            # 연동 만료/철회 → 죽은 연동 삭제 + 재연동 링크 안내 (정리 실패해도 post_message는 보장)
+            try:
+                if slack_user:
+                    delete_link(slack_user)
+                    link = build_connect_url(slack_user, ch, ts)
+                    cal = f"\n⚠️ Google 연결이 만료됐어요. 다시 연결해주세요:\n{link}"
+                else:
+                    cal = "\n⚠️ Google 연결이 만료됐어요. 다음 업로드 때 다시 연결해주세요."
+            except Exception as e:
+                print(f"[SLACK_TOKEN_CLEANUP_ERROR] {e}")
                 cal = "\n⚠️ Google 연결이 만료됐어요. 다음 업로드 때 다시 연결해주세요."
         except Exception as e:
             print(f"[SLACK_CAL_ERROR] {e}")
