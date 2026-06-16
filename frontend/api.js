@@ -14,7 +14,13 @@ export const uploadFile = async (file, userId) => {
   if (file.size > 50 * 1024 * 1024) throw new Error("파일이 너무 큽니다 (최대 50MB)");
   const { data } = await api.post("/upload", { filename: file.name, user_id: userId || "anonymous" });
   if (!data || !data.success || !data.upload_url) return { data };  // 실패는 호출부가 data.success로 처리
-  await axios.put(data.upload_url, file, { headers: { "Content-Type": file.type || "application/octet-stream" } });
+  try {
+    await axios.put(data.upload_url, file, { headers: { "Content-Type": file.type || "application/octet-stream" } });
+  } catch (e) {
+    // S3 직접 PUT 실패 → 방금 만든 고아 문서 레코드 정리
+    if (data.doc_id) { try { await deleteDocument(data.doc_id); } catch (_) { /* best-effort */ } }
+    throw e;
+  }
   return { data };
 };
 

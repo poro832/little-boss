@@ -141,12 +141,15 @@ def _handle_upload(event):
 
     doc = Document(filename=filename, user_id=user_id, status='uploaded')
     s3_key = f"uploads/{doc.doc_id}/{filename}"
-    # presigned URL을 먼저 발급해 실패 시 고아 레코드가 남지 않게 한다.
-    url = presigned_put_url(s3_key)
+    try:
+        # presigned URL을 먼저 발급해 실패 시 고아 레코드가 남지 않게 한다.
+        url = presigned_put_url(s3_key)
+        doc_data = dataclasses.asdict(doc)
+        doc_data['file_path'] = s3_key
+        save_document(doc.doc_id, doc_data)
+    except Exception as e:
+        return _response(500, {'success': False, 'message': f'업로드 준비 실패: {str(e)}'})
 
-    doc_data = dataclasses.asdict(doc)
-    doc_data['file_path'] = s3_key
-    save_document(doc.doc_id, doc_data)
     return _response(200, {
         'success': True,
         'doc_id': doc.doc_id,
