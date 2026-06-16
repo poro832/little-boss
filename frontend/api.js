@@ -43,6 +43,10 @@ export const getChecklist = (docId) => api.get(`/checklist/${docId}`);
 export const updateChecklistItem = (docId, name, completed) =>
   api.patch(`/checklist/${docId}`, { name, completed });
 
+// 문서 완료/되돌리기 (기존 /checklist 라우트 재사용 — name 없이 set_completed)
+export const setDocumentCompleted = (docId, completed) =>
+  api.patch(`/checklist/${docId}`, { set_completed: completed });
+
 // 이메일/비밀번호 인증
 export const signup = (name, email, password) =>
   api.post("/auth/signup", { name, email, password });
@@ -112,6 +116,7 @@ export function toScreenDoc(doc) {
     summary: a.summary || "",
     upload: (doc.created_at || "").slice(0, 10).replace(/-/g, "."),
     status: doc.status,
+    completed: !!doc.completed,
     deadlineDate: firstDeadline?.date || null,
     deadlineDesc: firstDeadline?.description || "",
     urgency: firstDeadline?.urgency || "normal",
