@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 import logo from "./logo.svg";
-import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem, deadlinesForMonth, deadlineEvents, signup as apiSignup, emailLogin as apiEmailLogin, deleteDocument, updateProfile, changePassword, updateNotifSettings, deleteAccount, requestReset, verifyReset, confirmReset } from "./api";
+import { uploadFile, pollUntilDone, registerCalendar, useDocuments, ddayInfo, updateChecklistItem, setDocumentCompleted, deadlinesForMonth, deadlineEvents, signup as apiSignup, emailLogin as apiEmailLogin, deleteDocument, updateProfile, changePassword, updateNotifSettings, deleteAccount, requestReset, verifyReset, confirmReset } from "./api";
 
 
 // ── Color tokens ──
@@ -749,7 +749,7 @@ function Sidebar({ currentSub, onNavTo, sidebarOpen }) {
       <span style={{ fontSize: 15, width: 18, textAlign: "center" }}>{icon}</span>{label}
     </div>
   );
-  const isDocsSub = ["sub-schedule","sub-ongoing","sub-expired"].includes(currentSub);
+  const isDocsSub = ["sub-schedule","sub-ongoing","sub-completed"].includes(currentSub);
   return (
     <aside style={{ width: 200, flexShrink: 0, background: C.white, borderRight: `1px solid ${C.purpleBorder}`, position: "fixed", top: 58, bottom: 0, zIndex: 45, padding: "20px 12px", overflowY: "auto", transform: sidebarOpen ? "translateX(0)" : "translateX(-200px)", opacity: sidebarOpen ? 1 : 0, transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)", pointerEvents: sidebarOpen ? "auto" : "none" }}>
       {navItem("sub-home", "🏠", "대시보드", currentSub === "sub-home")}
@@ -761,7 +761,7 @@ function Sidebar({ currentSub, onNavTo, sidebarOpen }) {
       </div>
       {subOpen && (
         <div style={{ paddingLeft: 16 }}>
-          {[["sub-schedule","📅","일정 관리"],["sub-ongoing","📋","진행 중인 문서"],["sub-expired","🗂️","마감된 문서"]].map(([id,icon,label]) => (
+          {[["sub-schedule","📅","일정 관리"],["sub-ongoing","📋","진행 중인 문서"],["sub-completed","✅","완료된 문서"]].map(([id,icon,label]) => (
             <div key={id} onClick={() => onNavTo(id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, fontSize: 12.5, color: currentSub === id ? C.purple : C.textMid, fontWeight: currentSub === id ? 600 : 400, cursor: "pointer", marginBottom: 2 }}>
               {icon} {label}
             </div>
@@ -783,7 +783,7 @@ function Dashboard({ onNavTo }) {
       const dd = ddayInfo(d.deadlineDate);
       const done = d.checks.filter(c => c.done).length;
       const allDone = d.total > 0 && done === d.total;
-      const status = allDone ? "완료" : dd.isPast ? "미완료" : "진행 중";
+      const status = (d.completed || allDone) ? "완료" : dd.isPast ? "미완료" : "진행 중";
       return {
         name: d.filename || d.title,
         date: `${d.upload}${d.deadlineDate ? ` · 마감 ${dd.text}` : ""}`,
@@ -801,7 +801,7 @@ function Dashboard({ onNavTo }) {
     });
   // 마감 임박 문서: 마감 안 지난 것 중 D-day 가장 가까운 1개
   const urgentDoc = serverDocs
-    .filter(d => d.status === "done" && d.deadlineDate && !ddayInfo(d.deadlineDate).isPast)
+    .filter(d => d.status === "done" && d.deadlineDate && !ddayInfo(d.deadlineDate).isPast && !d.completed)
     .map(d => ({ ...d, _days: ddayInfo(d.deadlineDate).days ?? 99999 }))
     .sort((a, b) => a._days - b._days)[0] || null;
   const _today = new Date();
@@ -1420,6 +1420,20 @@ function OngoingPage({ onNavTo, toast }) {
   const { docs, loading, error, reload } = useDocuments();
   const [checkState, setCheckState] = useState({}); // `${docId}::${name}` -> bool (낙관적 오버라이드)
   const [deletingId, setDeletingId] = useState(null);
+  const [completingId, setCompletingId] = useState(null);
+  const handleComplete = async (docId) => {
+    setCompletingId(docId);
+    try {
+      const { data } = await setDocumentCompleted(docId, true);
+      if (!data.success) throw new Error(data.message || "완료 처리 실패");
+      toast("✅ 완료 처리했어요");
+      await reload?.();
+    } catch (e) {
+      toast("완료 처리 실패: " + (e.response?.data?.message || e.message));
+    } finally {
+      setCompletingId(null);
+    }
+  };
 
   const handleDelete = async (e, docId, title) => {
     e.stopPropagation();
@@ -1434,11 +1448,10 @@ function OngoingPage({ onNavTo, toast }) {
       setDeletingId(null);
     }
   };
-  // 진행 중 = 분석 완료(done) & 마감 안 지남
+  // 진행 중 = 분석 완료(done) & 아직 완료 처리 안 함 (마감 지나도 완료 전엔 진행 중에 유지)
   const ongoing = docs.filter(d => {
     if (d.status !== "done") return d.status !== "error"; // 처리중 문서도 표시
-    const dd = ddayInfo(d.deadlineDate);
-    return !dd.isPast;
+    return !d.completed;
   });
 
   const toggleCheck = async (docId, name, current) => {
@@ -1504,6 +1517,18 @@ function OngoingPage({ onNavTo, toast }) {
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textLight, marginTop: 5 }}>
                     <span>서류 준비 현황</span><span style={{ color: C.purple, fontWeight: 600 }}>{doneCount} / {doc.total} 완료</span>
                   </div>
+                  {(() => {
+                    const canComplete = doc.total === 0 || doneCount === doc.total;
+                    return (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleComplete(doc.doc_id); }}
+                        disabled={!canComplete || completingId === doc.doc_id}
+                        style={{ ...S.btnPrimary, marginTop: 14, width: "100%", fontSize: 13, opacity: canComplete ? 1 : 0.45, cursor: canComplete ? "pointer" : "not-allowed" }}
+                      >
+                        {completingId === doc.doc_id ? "완료 처리 중..." : (canComplete ? "✅ 완료 처리" : "서류를 모두 체크하면 완료할 수 있어요")}
+                      </button>
+                    );
+                  })()}
                 </>
               )}
             </div>
@@ -1514,19 +1539,32 @@ function OngoingPage({ onNavTo, toast }) {
   );
 }
 
-function ExpiredPage({ onNavTo, toast }) {
+function CompletedPage({ onNavTo, toast }) {
   const { docs: allDocs, loading, error, reload } = useDocuments();
   const [hidden, setHidden] = useState([]);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reopeningId, setReopeningId] = useState(null);
+  const handleReopen = async (docId) => {
+    setReopeningId(docId);
+    try {
+      const { data } = await setDocumentCompleted(docId, false);
+      if (!data.success) throw new Error(data.message || "되돌리기 실패");
+      toast("진행 중으로 되돌렸어요");
+      await reload?.();
+    } catch (e) {
+      toast("되돌리기 실패: " + (e.response?.data?.message || e.message));
+    } finally {
+      setReopeningId(null);
+    }
+  };
 
-  // 마감 지난 문서만
+  // 완료 처리한 문서만
   const docs = allDocs.filter(d => {
     if (hidden.includes(d.doc_id)) return false;
-    const dd = ddayInfo(d.deadlineDate);
-    return dd.isPast;
+    return d.status === "done" && d.completed;
   });
 
   const handleDeleteClick = (docId) => {
@@ -1559,11 +1597,11 @@ function ExpiredPage({ onNavTo, toast }) {
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}><div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>마감된 문서</div><div style={{ fontSize: 14, color: C.textLight }}>마감이 지난 문서 목록입니다.</div></div>
+      <div style={{ marginBottom: 24 }}><div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>완료된 문서</div><div style={{ fontSize: 14, color: C.textLight }}>완료 처리한 문서 목록입니다.</div></div>
       {loading && <Skeleton rows={3} />}
       {error && <div style={{ ...S.card, color: C.red }}>⚠️ {error}</div>}
       {!loading && !error && docs.length === 0 && (
-        <EmptyState icon="🗂️" title="마감된 문서가 없습니다" desc="마감일이 지난 문서가 여기에 모입니다." />
+        <EmptyState icon="✅" title="완료된 문서가 없습니다" desc="체크리스트를 끝내고 완료하면 여기에 모입니다." />
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {docs.map(doc => {
@@ -1574,11 +1612,12 @@ function ExpiredPage({ onNavTo, toast }) {
           return (
             <div key={doc.doc_id} style={{ ...S.card, opacity: 0.85 }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 20, background: allDone ? "#F0FDF4" : "#FFE5E5", color: allDone ? C.green : C.red }}>
-                  {allDone ? '완료' : '미완료'}
+                <span style={{ fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 20, background: "#F0FDF4", color: C.green }}>
+                  완료
                 </span>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <span style={{ fontSize: 11, color: C.textLight }}>{doc.deadlineDate || "마감일 미상"}</span>
+                  <button onClick={() => handleReopen(doc.doc_id)} disabled={reopeningId === doc.doc_id} style={{ ...S.btnOutline, fontSize: 11, padding: "5px 10px" }}>{reopeningId === doc.doc_id ? "처리 중..." : "↩ 되돌리기"}</button>
                   <button onClick={() => handleDeleteClick(doc.doc_id)} style={{ ...S.btnOutline, fontSize: 11, padding: "5px 10px", color: C.red, borderColor: C.red }}>🗑️ 삭제</button>
                 </div>
               </div>
@@ -2357,7 +2396,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(typeof window !== "undefined" && window.innerWidth >= 768);
   const { msg, show, toast } = useToast();
 
-  const titleMap = { "sub-home":"대시보드","sub-upload":"문서 업로드","sub-schedule":"일정 관리","sub-ongoing":"진행 중인 문서","sub-expired":"마감된 문서","sub-profile":"내 정보", "schedule-detail":"일정 상세", "doc-detail":"문서 상세" };
+  const titleMap = { "sub-home":"대시보드","sub-upload":"문서 업로드","sub-schedule":"일정 관리","sub-ongoing":"진행 중인 문서","sub-completed":"완료된 문서","sub-profile":"내 정보", "schedule-detail":"일정 상세", "doc-detail":"문서 상세" };
 
   const handleLogin = (m) => { setPage("app"); setSub("sub-home"); toast(m); };
   const handleLogout = () => {
@@ -2407,7 +2446,7 @@ export default function App() {
           {sub === "sub-schedule" && <SchedulePage onNavTo={navTo} />}
           {sub === "schedule-detail" && <ScheduleDetailPage day={scheduleDetailDay} title={scheduleDetailTitle} prevSub={prevSub} onNavTo={navTo} toast={toast} />}
           {sub === "sub-ongoing" && <OngoingPage onNavTo={navTo} toast={toast} />}
-          {sub === "sub-expired" && <ExpiredPage onNavTo={navTo} toast={toast} />}
+          {sub === "sub-completed" && <CompletedPage onNavTo={navTo} toast={toast} />}
           {sub === "doc-detail" && <DocumentDetailPage data={docDetailData} prevSub={prevSub} onNavTo={navTo} toast={toast} />}
           {sub === "sub-profile" && <ProfilePage toast={toast} onLogout={handleLogout} />}
         </main>
