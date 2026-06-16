@@ -44,6 +44,17 @@ def get_file(file_path: str) -> bytes:
     return obj['Body'].read()
 
 
+def presigned_put_url(s3_key: str, expires: int = 300) -> str:
+    """S3 PUT presigned URL 발급 (브라우저가 S3에 직접 업로드)."""
+    import boto3
+    s3 = boto3.client("s3")
+    return s3.generate_presigned_url(
+        "put_object",
+        Params={"Bucket": os.getenv("S3_BUCKET"), "Key": s3_key},
+        ExpiresIn=expires,
+    )
+
+
 def delete_document(doc_id: str) -> bool:
     """문서 삭제: 메타데이터(DynamoDB) + 업로드 파일·OCR 결과(S3)"""
     if ENV == "local":

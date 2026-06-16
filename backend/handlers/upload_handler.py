@@ -6,10 +6,8 @@ AWS:  파일을 S3에 저장 후 OCR Lambda 트리거 (API Gateway 이벤트)
 import os
 import json
 import base64
-import cgi
-import io
 from models.document import Document
-from utils.storage import save_file, save_document, get_document, list_documents, delete_document
+from utils.storage import save_file, save_document, get_document, list_documents, delete_document, presigned_put_url
 import dataclasses
 
 
@@ -129,33 +127,32 @@ def _json_body(event) -> dict:
 
 
 def _handle_upload(event):
-    """멀티파트 폼 데이터 파싱 후 업로드 처리"""
-    headers = {k.lower(): v for k, v in (event.get('headers') or {}).items()}
-    content_type = headers.get('content-type', '')
-    body = event.get('body', '')
-    if event.get('isBase64Encoded'):
-        body = base64.b64decode(body)
-    else:
-        body = body.encode()
+    """presigned PUT URL 발급 + 문서 레코드 생성 (브라우저가 S3에 직접 업로드)."""
+    b = _json_body(event)
+    filename = (b.get('filename') or '').strip()
+    user_id = b.get('user_id') or 'anonymous'
+    if not filename:
+        return _response(400, {'success': False, 'message': 'filename이 필요합니다.'})
 
-    fp = io.BytesIO(body)
-    environ = {
-        'REQUEST_METHOD': 'POST',
-        'CONTENT_TYPE': content_type,
-        'CONTENT_LENGTH': str(len(body))
-    }
-    form = cgi.FieldStorage(fp=fp, environ=environ, keep_blank_values=True)
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        return _response(400, {'success': False, 'message': f"지원하지 않는 파일 형식입니다. ({', '.join(ALLOWED_EXTENSIONS)})"})
 
-    if 'file' not in form:
-        return _response(400, {'success': False, 'message': '파일이 없습니다.'})
+    doc = Document(filename=filename, user_id=user_id, status='uploaded')
+    s3_key = f"uploads/{doc.doc_id}/{filename}"
+    doc_data = dataclasses.asdict(doc)
+    doc_data['file_path'] = s3_key
+    save_document(doc.doc_id, doc_data)
 
-    file_field = form['file']
-    filename = file_field.filename
-    file_bytes = file_field.file.read()
-    user_id = form.getvalue('user_id', 'anonymous')
-
-    result = process(filename, file_bytes, user_id)
-    return _response(200 if result['success'] else 400, result)
+    url = presigned_put_url(s3_key)
+    return _response(200, {
+        'success': True,
+        'doc_id': doc.doc_id,
+        'upload_url': url,
+        'filename': filename,
+        'status': 'uploaded',
+        'message': 'presigned URL 발급 완료. 이 URL로 파일을 업로드하세요.',
+    })
 
 
 def _response(status_code, body):
