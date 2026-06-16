@@ -45,12 +45,16 @@ def get_file(file_path: str) -> bytes:
 
 
 def presigned_put_url(s3_key: str, expires: int = 300) -> str:
-    """S3 PUT presigned URL 발급 (브라우저가 S3에 직접 업로드)."""
+    """S3 PUT presigned URL 발급 (브라우저가 S3에 직접 업로드).
+    로컬 모드는 S3가 없으므로 placeholder를 반환한다(로컬 업로드는 process()/save_file 사용)."""
+    if ENV == "local":
+        return f"local://{s3_key}"
+
     import boto3
-    s3 = boto3.client("s3")
+    s3 = boto3.client('s3')
     return s3.generate_presigned_url(
-        "put_object",
-        Params={"Bucket": os.getenv("S3_BUCKET"), "Key": s3_key},
+        'put_object',
+        Params={'Bucket': os.getenv('S3_BUCKET'), 'Key': s3_key},
         ExpiresIn=expires,
     )
 
