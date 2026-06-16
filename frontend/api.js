@@ -9,14 +9,19 @@ const api = axios.create({ baseURL: API_URL, timeout: 30000 });
 // 헬스 체크
 export const checkHealth = () => api.get("/health");
 
-// 파일 업로드 → { success, doc_id, status, ... }
-export const uploadFile = (file, userId) => {
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("user_id", userId || "anonymous");
-  return api.post("/upload", fd, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+// 파일 업로드: ① presigned URL 발급 → ② S3에 직접 PUT (API Gateway 10MB 우회)
+export const uploadFile = async (file, userId) => {
+  if (file.size > 50 * 1024 * 1024) throw new Error("파일이 너무 큽니다 (최대 50MB)");
+  const { data } = await api.post("/upload", { filename: file.name, user_id: userId || "anonymous" });
+  if (!data || !data.success || !data.upload_url) return { data };  // 실패는 호출부가 data.success로 처리
+  try {
+    await axios.put(data.upload_url, file, { headers: { "Content-Type": file.type || "application/octet-stream" } });
+  } catch (e) {
+    // S3 직접 PUT 실패 → 방금 만든 고아 문서 레코드 정리
+    if (data.doc_id) { try { await deleteDocument(data.doc_id); } catch (_) { /* best-effort */ } }
+    throw e;
+  }
+  return { data };
 };
 
 // 문서 상태/분석결과 조회 (폴링용)
