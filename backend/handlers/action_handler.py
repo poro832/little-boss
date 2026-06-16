@@ -7,7 +7,7 @@ AWS:  Google Calendar API + DynamoDB 저장
 """
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from utils.storage import get_document, save_document
 
 
@@ -171,7 +171,7 @@ def handle_document_completion(doc_id: str, completed: bool) -> dict:
         return {"success": False, "message": "문서를 찾을 수 없습니다."}
     doc["completed"] = completed
     if completed:
-        doc["completed_at"] = datetime.utcnow().isoformat()
+        doc["completed_at"] = datetime.now(timezone.utc).isoformat()
     else:
         doc.pop("completed_at", None)
     save_document(doc_id, doc)
