@@ -7,6 +7,7 @@ AWS:  Google Calendar API + DynamoDB 저장
 """
 import os
 import json
+from datetime import datetime
 from utils.storage import get_document, save_document
 
 
@@ -28,7 +29,10 @@ def handle(event, context=None):
     elif '/checklist/' in path and method == 'GET':
         result = handle_checklist(doc_id)
     elif '/checklist/' in path and method == 'PATCH':
-        result = handle_checklist_update(doc_id, body.get('name'), body.get('completed', False))
+        if body.get('name') is None and 'set_completed' in body:
+            result = handle_document_completion(doc_id, bool(body.get('set_completed')))
+        else:
+            result = handle_checklist_update(doc_id, body.get('name'), body.get('completed', False))
     else:
         result = {'success': False, 'message': f'알 수 없는 경로: {method} {path}'}
 
@@ -158,6 +162,20 @@ def notify_slack_done(doc: dict):
         post_message(token, ch, ts, "\n".join(lines) + cal)
     except Exception as e:
         print(f"[SLACK_POST_ERROR] {e}")
+
+
+def handle_document_completion(doc_id: str, completed: bool) -> dict:
+    """문서 완료/되돌리기 토글 (체크리스트 항목 토글과 별개)."""
+    doc = get_document(doc_id)
+    if not doc:
+        return {"success": False, "message": "문서를 찾을 수 없습니다."}
+    doc["completed"] = completed
+    if completed:
+        doc["completed_at"] = datetime.utcnow().isoformat()
+    else:
+        doc.pop("completed_at", None)
+    save_document(doc_id, doc)
+    return {"success": True, "doc_id": doc_id, "completed": completed}
 
 
 def handle_checklist_update(doc_id: str, item_name: str, completed: bool) -> dict:
