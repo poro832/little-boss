@@ -1426,7 +1426,8 @@ function OngoingPage({ onNavTo, toast }) {
     try {
       const { data } = await setDocumentCompleted(docId, true);
       if (!data.success) throw new Error(data.message || "완료 처리 실패");
-      reload?.();
+      toast("✅ 완료 처리했어요");
+      await reload?.();
     } catch (e) {
       toast("완료 처리 실패: " + (e.response?.data?.message || e.message));
     } finally {
@@ -1551,7 +1552,8 @@ function CompletedPage({ onNavTo, toast }) {
     try {
       const { data } = await setDocumentCompleted(docId, false);
       if (!data.success) throw new Error(data.message || "되돌리기 실패");
-      reload?.();
+      toast("진행 중으로 되돌렸어요");
+      await reload?.();
     } catch (e) {
       toast("되돌리기 실패: " + (e.response?.data?.message || e.message));
     } finally {
