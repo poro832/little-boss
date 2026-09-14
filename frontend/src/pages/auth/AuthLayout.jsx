@@ -76,6 +76,8 @@ export default function AuthLayout({ children }) {
 }
 
 // ── Google 로그인 버튼 (로그인/회원가입 화면 공통) ──
+// 아래 4색은 Google의 고정 브랜드 컬러다. 서드파티 브랜드 마크는 디자인 시스템 토큰 대상이 아니므로
+// 테마와 무관하게 항상 이 값을 그대로 쓴다 — 토큰으로 옮기지 않는다.
 const GoogleMark = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

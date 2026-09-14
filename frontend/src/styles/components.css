@@ -248,22 +248,22 @@
   padding: 60px 56px; display: flex; flex-direction: column; justify-content: space-between;
   position: relative; overflow: hidden;
 }
-.auth-blob { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, .06); }
+.auth-blob { position: absolute; border-radius: 50%; background: var(--on-brand-faint); }
 .auth-blob-1 { top: -90px; right: -90px; width: 300px; height: 300px; }
-.auth-blob-2 { bottom: -130px; left: -70px; width: 340px; height: 340px; background: rgba(255, 255, 255, .05); }
+.auth-blob-2 { bottom: -130px; left: -70px; width: 340px; height: 340px; background: var(--on-brand-faint); }
 .auth-brand-content { position: relative; }
 .auth-brand-header { display: flex; align-items: center; gap: 10px; margin-bottom: 52px; }
 .auth-brand-logo { width: 44px; height: 44px; border-radius: var(--radius-xs); }
 .auth-brand-name { font-weight: 800; font-size: 20px; color: var(--text-on-brand); }
 .auth-brand-title { font-size: 31px; font-weight: 800; color: var(--text-on-brand); line-height: 1.38; margin: 0 0 16px; }
-.auth-brand-desc { font-size: 15px; color: rgba(255, 255, 255, .8); line-height: 1.6; margin: 0 0 44px; }
+.auth-brand-desc { font-size: 15px; color: var(--on-brand-dim); line-height: 1.6; margin: 0 0 44px; }
 .auth-feature { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 20px; }
 .auth-feature-icon {
-  width: 38px; height: 38px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, .15);
+  width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--on-brand-soft);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-on-brand);
 }
 .auth-feature-title { font-size: 15px; font-weight: 700; color: var(--text-on-brand); margin-bottom: 3px; }
-.auth-feature-desc { font-size: 13px; color: rgba(255, 255, 255, .72); line-height: 1.5; }
+.auth-feature-desc { font-size: 13px; color: var(--on-brand-dim); line-height: 1.5; }
 
 .auth-card-panel {
   flex: 1 1 40%; background: var(--surface-raised);

@@ -11,6 +11,9 @@
   --text-muted: #5A4D7A;
   --text-subtle: #9B90B8;
   --text-on-brand: #FFFFFF;
+  --on-brand-faint: rgba(255, 255, 255, .06);
+  --on-brand-soft:  rgba(255, 255, 255, .18);
+  --on-brand-dim:   rgba(255, 255, 255, .80);
 
   --border: #E8E4F4;
   --border-strong: #D8D3E6;
