@@ -1,6 +1,5 @@
 // LittleBoss 백엔드 API 클라이언트
 import axios from "axios";
-import { useState, useEffect } from "react";
 import { deadlineInfo, formatDeadline } from "./format";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -154,34 +153,6 @@ export function deadlinesForMonth(screenDocs, year, month1to12) {
     }
   });
   return map;
-}
-
-// 사용자 문서 목록 훅: { docs, loading, error, reload }
-export function useDocuments() {
-  const [docs, setDocs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const load = async () => {
-    const userId = localStorage.getItem("user_id") || "anonymous";
-    setLoading(true);
-    setError("");
-    try {
-      const { data } = await listDocuments(userId);
-      const mapped = (data.documents || []).map(toScreenDoc);
-      setDocs(mapped);
-    } catch (e) {
-      setError(e.response?.data?.message || e.message || "문서 조회 실패");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  return { docs, loading, error, reload: load };
 }
 
 export default api;
