@@ -87,7 +87,7 @@
 .toast-show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
 
 /* ── 확인 모달 ── */
-.dialog-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300;
+.dialog-backdrop { position: fixed; inset: 0; background: var(--scrim); z-index: 300;
   display: flex; align-items: center; justify-content: center; }
 .dialog { background: var(--surface-raised); border-radius: var(--radius-lg);
   padding: var(--space-6); width: min(420px, calc(100vw - 32px)); box-shadow: var(--shadow-pop); }
@@ -133,7 +133,7 @@
 .app-body { display: flex; padding-top: 58px; min-height: calc(100vh - 58px); }
 .app-main { flex: 1; padding: var(--space-6); transition: padding-left .35s var(--ease); min-width: 0; }
 .app-main-pushed { padding-left: calc(200px + var(--space-6)); }
-.sidebar-scrim { position: fixed; top: 58px; inset-inline: 0; bottom: 0; background: rgba(0,0,0,.4); z-index: 40; }
+.sidebar-scrim { position: fixed; top: 58px; inset-inline: 0; bottom: 0; background: var(--scrim); z-index: 40; }
 @media (max-width: 768px) {
   .app-main { padding: var(--space-4); }
   .app-main-pushed { padding-left: var(--space-4); }
@@ -192,6 +192,7 @@
 .notif-item-clickable { cursor: pointer; }
 .notif-item-clickable:hover { background: var(--surface-sunken); }
 .notif-item-highlight { background: var(--danger-soft); }
+.notif-item-pinned .notif-item-icon { color: var(--danger); }
 .notif-item-body { flex: 1; min-width: 0; }
 .notif-item-icon { flex-shrink: 0; color: var(--brand); margin-top: 1px; }
 .notif-item-title { font-size: 12px; font-weight: 800; color: var(--text); margin-bottom: 2px; }

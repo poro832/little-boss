@@ -26,6 +26,7 @@
   --warning: #EA580C;  --warning-soft: #FFF7ED;
   --today: #0066CC;    --today-soft: #E0F2FE;
   --track: #EDE9FF;
+  --scrim: rgba(0, 0, 0, .45);
 
   --radius-xs: 6px;
   --radius-sm: 10px;
@@ -68,6 +69,7 @@
     --warning: #FB923C;  --warning-soft: #2C1D10;
     --today: #5AB0FF;    --today-soft: #12283A;
     --track: #2A2340;
+    --scrim: rgba(0, 0, 0, .62);
     --shadow-card: 0 1px 8px rgba(0, 0, 0, .40);
     --shadow-hover: 0 16px 44px rgba(0, 0, 0, .55);
     --shadow-pop: 0 8px 32px rgba(0, 0, 0, .50);
@@ -93,6 +95,7 @@
   --warning: #FB923C;  --warning-soft: #2C1D10;
   --today: #5AB0FF;    --today-soft: #12283A;
   --track: #2A2340;
+  --scrim: rgba(0, 0, 0, .62);
   --shadow-card: 0 1px 8px rgba(0, 0, 0, .40);
   --shadow-hover: 0 16px 44px rgba(0, 0, 0, .55);
   --shadow-pop: 0 8px 32px rgba(0, 0, 0, .50);

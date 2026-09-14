@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { listDocuments, toScreenDoc } from './api';
+import { getUser } from './auth';
 
 // 사용자 문서 목록 훅: { docs, loading, error, reload }
 export function useDocuments() {
@@ -8,7 +9,7 @@ export function useDocuments() {
   const [error, setError] = useState("");
 
   const load = async () => {
-    const userId = localStorage.getItem("user_id") || "anonymous";
+    const userId = getUser().id || "anonymous";
     setLoading(true);
     setError("");
     try {

@@ -165,7 +165,7 @@ export default function Header({ onLogout, onNavTo, sidebarOpen, setSidebarOpen 
                     <div
                       key={notif.id}
                       onClick={clickable ? handleNotifClick : undefined}
-                      className={`notif-item ${clickable ? 'notif-item-clickable' : ''} ${notif.type === 'highlight' ? 'notif-item-highlight' : ''}`}
+                      className={`notif-item ${clickable ? 'notif-item-clickable' : ''} ${notif.type === 'highlight' ? 'notif-item-highlight' : ''} ${notif.pinned ? 'notif-item-pinned' : ''}`}
                     >
                       <Icon size={17} className="notif-item-icon" />
                       <div className="notif-item-body">

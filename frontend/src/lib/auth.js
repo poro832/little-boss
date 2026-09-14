@@ -29,7 +29,8 @@ export function saveSession({ user_id, email, name }) {
 }
 
 export function clearSession() {
-  try { localStorage.clear(); } catch { /* 차단 환경 */ }
+  ['user_id', 'user_email', 'user_name', 'user_affiliation', 'user_token',
+   'dismissed_notifs', 'profileImage'].forEach(drop);
 }
 
 // ── Google 캘린더 토큰 (1시간 만료) ──
