@@ -1,0 +1,99 @@
+/* 라이트 팔레트를 전부 여기에 정의한다.
+   다크 블록에서는 달라지는 토큰만 재정의한다. */
+:root {
+  color-scheme: light;
+
+  --surface: #FFFFFF;
+  --surface-sunken: #F2F1F6;
+  --surface-raised: #FFFFFF;
+
+  --text: #1A1025;
+  --text-muted: #5A4D7A;
+  --text-subtle: #9B90B8;
+  --text-on-brand: #FFFFFF;
+
+  --border: #E8E4F4;
+  --border-strong: #D8D3E6;
+
+  --brand: #6B4FE8;
+  --brand-strong: #5038C4;
+  --brand-light: #8B72F0;
+  --brand-soft: #F0ECFF;
+  --brand-gradient: linear-gradient(135deg, #8B72F0 0%, #6B4FE8 48%, #5038C4 100%);
+
+  --danger: #E53E3E;   --danger-soft: #FFF0F0;
+  --success: #22C55E;  --success-soft: #F0FFF4;
+  --warning: #EA580C;  --warning-soft: #FFF7ED;
+  --today: #0066CC;    --today-soft: #E0F2FE;
+  --track: #EDE9FF;
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
+
+  --shadow-card: 0 1px 8px rgba(107, 79, 232, .07);
+  --shadow-hover: 0 16px 44px rgba(107, 79, 232, .16);
+  --shadow-brand: 0 10px 28px rgba(107, 79, 232, .30);
+  --shadow-pop: 0 8px 32px rgba(26, 16, 37, .12);
+
+  --font-sans: 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+  --font-num: 'DM Sans', 'Noto Sans KR', system-ui, sans-serif;
+
+  --ease: cubic-bezier(.4, 0, .2, 1);
+}
+
+/* 시스템이 다크이고 사용자가 라이트를 고르지 않았을 때 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface: #171325;
+    --surface-sunken: #100D1A;
+    --surface-raised: #1F1A30;
+    --text: #F3F0FA;
+    --text-muted: #B5AACB;
+    --text-subtle: #7D7391;
+    --border: #2C2440;
+    --border-strong: #3A3154;
+    --brand: #8B72F0;
+    --brand-strong: #A692F5;
+    --brand-soft: #241D3B;
+    --danger: #FF6B6B;   --danger-soft: #2E1A1A;
+    --success: #4ADE80;  --success-soft: #16281C;
+    --warning: #FB923C;  --warning-soft: #2C1D10;
+    --today: #5AB0FF;    --today-soft: #12283A;
+    --track: #2A2340;
+    --shadow-card: 0 1px 8px rgba(0, 0, 0, .40);
+    --shadow-hover: 0 16px 44px rgba(0, 0, 0, .55);
+    --shadow-pop: 0 8px 32px rgba(0, 0, 0, .50);
+  }
+}
+
+/* 사용자가 명시적으로 다크를 고른 경우. 시스템이 라이트여도 이긴다. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #171325;
+  --surface-sunken: #100D1A;
+  --surface-raised: #1F1A30;
+  --text: #F3F0FA;
+  --text-muted: #B5AACB;
+  --text-subtle: #7D7391;
+  --border: #2C2440;
+  --border-strong: #3A3154;
+  --brand: #8B72F0;
+  --brand-strong: #A692F5;
+  --brand-soft: #241D3B;
+  --danger: #FF6B6B;   --danger-soft: #2E1A1A;
+  --success: #4ADE80;  --success-soft: #16281C;
+  --warning: #FB923C;  --warning-soft: #2C1D10;
+  --today: #5AB0FF;    --today-soft: #12283A;
+  --track: #2A2340;
+  --shadow-card: 0 1px 8px rgba(0, 0, 0, .40);
+  --shadow-hover: 0 16px 44px rgba(0, 0, 0, .55);
+  --shadow-pop: 0 8px 32px rgba(0, 0, 0, .50);
+}
