@@ -29,7 +29,7 @@ export default function ConfirmDialog({
         {desc && <div className="dialog-desc">{desc}</div>}
         <div className="dialog-actions">
           <Button ref={cancelRef} variant="outline" onClick={onCancel} disabled={busy}>{cancelLabel}</Button>
-          <Button variant={tone} onClick={onConfirm} disabled={busy}>
+          <Button variant={tone === 'danger' ? 'danger' : 'primary'} onClick={onConfirm} disabled={busy}>
             {busy ? '처리 중...' : confirmLabel}
           </Button>
         </div>
