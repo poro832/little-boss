@@ -1,0 +1,101 @@
+/* ── 버튼 ── */
+.btn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  border: none; border-radius: var(--radius-sm);
+  font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: background .2s var(--ease), transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease);
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-md { padding: 10px 20px; font-size: 13px; }
+.btn-sm { padding: 7px 14px; font-size: 12px; }
+
+.btn-primary { background: var(--brand); color: var(--text-on-brand); box-shadow: var(--shadow-brand); }
+.btn-primary:hover:not(:disabled) { background: var(--brand-strong); transform: translateY(-1px); }
+
+.btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+.btn-outline:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
+
+.btn-ghost { background: transparent; color: var(--text-muted); }
+.btn-ghost:hover:not(:disabled) { background: var(--brand-soft); color: var(--brand); }
+
+/* 되돌릴 수 없는 동작 전용. 브랜드색을 쓰지 않는다. */
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover:not(:disabled) { filter: brightness(.92); transform: translateY(-1px); }
+
+/* ── 카드 ── */
+.card {
+  background: var(--surface-raised); border-radius: var(--radius-md);
+  padding: var(--space-5); box-shadow: var(--shadow-card);
+  border: 1px solid var(--border);
+}
+.card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+
+/* ── 칩 ── */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: var(--radius-pill);
+  font-size: 12px; font-weight: 700;
+}
+.chip-brand   { background: var(--brand-soft);   color: var(--brand); }
+.chip-danger  { background: var(--danger-soft);  color: var(--danger); }
+.chip-success { background: var(--success-soft); color: var(--success); }
+.chip-warning { background: var(--warning-soft); color: var(--warning); }
+.chip-neutral { background: var(--surface-sunken); color: var(--text-subtle); }
+
+/* ── 입력 ── */
+.field { margin-bottom: var(--space-4); }
+.field-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+.field-input {
+  width: 100%; padding: 12px 14px; font-size: 14px;
+  background: var(--surface); color: var(--text);
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  outline: none; transition: border-color .2s var(--ease);
+}
+.field-input:focus { border-color: var(--brand); }
+.field-input:disabled { background: var(--surface-sunken); color: var(--text-subtle); cursor: not-allowed; }
+.field-hint  { margin-top: 6px; font-size: 12px; color: var(--text-subtle); }
+.field-error { margin-top: 6px; font-size: 12px; color: var(--danger); }
+
+/* ── 토글 ── */
+.toggle { width: 44px; height: 24px; border-radius: var(--radius-pill); border: none;
+  background: var(--border-strong); cursor: pointer; position: relative; transition: background .2s var(--ease); }
+.toggle[aria-checked="true"] { background: var(--brand); }
+.toggle-knob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+  border-radius: 50%; background: #fff; transition: transform .2s var(--ease); }
+.toggle[aria-checked="true"] .toggle-knob { transform: translateX(20px); }
+
+/* ── 진행바 ── */
+.progress { height: 7px; border-radius: 4px; background: var(--track); overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 4px; background: var(--brand); transition: width .3s var(--ease); }
+
+/* ── 빈 상태 ── */
+.empty { text-align: center; padding: var(--space-7) var(--space-5); }
+.empty-icon { color: var(--text-subtle); margin-bottom: var(--space-3); }
+.empty-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.empty-desc  { font-size: 13px; color: var(--text-subtle); margin-bottom: var(--space-4); }
+
+/* ── 스켈레톤 ── */
+.skeleton-row { height: 14px; border-radius: var(--radius-xs); background: var(--track);
+  animation: lbpulse 1.4s ease-in-out infinite; margin-bottom: var(--space-3); }
+
+/* ── 토스트 ── */
+.toast { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%);
+  background: var(--text); color: var(--surface); padding: 12px 22px;
+  border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+  box-shadow: var(--shadow-pop); z-index: 200;
+  opacity: 0; pointer-events: none; transition: opacity .25s var(--ease), transform .25s var(--ease); }
+.toast-show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+/* ── 확인 모달 ── */
+.dialog-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300;
+  display: flex; align-items: center; justify-content: center; }
+.dialog { background: var(--surface-raised); border-radius: var(--radius-lg);
+  padding: var(--space-6); width: min(420px, calc(100vw - 32px)); box-shadow: var(--shadow-pop); }
+.dialog-title { font-size: 17px; font-weight: 800; margin-bottom: var(--space-2); }
+.dialog-desc { font-size: 13.5px; color: var(--text-muted); line-height: 1.7; margin-bottom: var(--space-5); }
+.dialog-actions { display: flex; gap: var(--space-2); justify-content: flex-end; }
+
+/* ── 스피너 ── */
+.spinner { width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--track); border-top-color: var(--brand);
+  animation: lbspin .7s linear infinite; display: inline-block; }
