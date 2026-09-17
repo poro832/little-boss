@@ -248,10 +248,10 @@ export default function UploadPage({ onNavTo }) {
                         <Calendar size={16} /> {calMsg.text}
                       </div>
                     )}
-                    <div className="upload-cal-btn-wrap">
                     <Button
                       variant="outline"
                       icon={Calendar}
+                      className="upload-cal-btn"
                       onClick={async () => {
                         const token = getCalendarToken();
                         if (!token) {
@@ -273,7 +273,6 @@ export default function UploadPage({ onNavTo }) {
                     >
                       캘린더에 다시 등록 ({(analysis.calendar_events || []).length}개)
                     </Button>
-                    </div>
                   </>
                 )}
               </div>

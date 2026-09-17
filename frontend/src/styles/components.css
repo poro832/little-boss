@@ -431,7 +431,7 @@
 .upload-cal-banner { border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
 .upload-cal-banner-success { background: var(--success-soft); color: var(--success); }
 .upload-cal-banner-info { background: var(--brand-soft); color: var(--brand); }
-.upload-cal-btn-wrap .btn { width: 100%; justify-content: center; }
+.upload-cal-btn { width: 100%; justify-content: center; }
 
 .upload-progress-dialog { max-height: 500px; overflow-y: auto; }
 .upload-progress-title { text-align: center; }
