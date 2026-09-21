@@ -1,22 +1,23 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>리틀보스 - AI 행정 비서</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/styles/tokens.css" />
 <style>
   :root {
-    --purple: #6B4FE8;
-    --purple-dark: #5038C4;
-    --purple-light: #8B72F0;
-    --purple-bg: #F0ECFF;
-    --text-dark: #1A1025;
-    --text-mid: #5A4D7A;
-    --text-light: #9B90B8;
-    --white: #FFFFFF;
-    --bg: #F2F1F6;
-    --grad: linear-gradient(135deg, var(--purple-light) 0%, var(--purple) 48%, var(--purple-dark) 100%);
+    --purple: var(--brand);
+    --purple-dark: var(--brand-strong);
+    --purple-light: var(--brand-light);
+    --purple-bg: var(--brand-soft);
+    --text-dark: var(--text);
+    --text-mid: var(--text-muted);
+    --text-light: var(--text-subtle);
+    --white: var(--surface);
+    --bg: var(--surface-sunken);
+    --grad: var(--brand-gradient);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -216,10 +217,13 @@
     transform: translateY(-6px);
   }
   .feature-icon {
-    width: 52px; height: 52px; background: var(--grad);
-    border-radius: 14px; display: flex; align-items: center; justify-content: center;
-    margin-bottom: 18px; box-shadow: 0 8px 18px rgba(107,79,232,0.25);
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px;
+    color: var(--brand);
+    background: none; box-shadow: none; border-radius: 0;
   }
+  .feature-icon svg { width: 44px; height: 44px; stroke-width: 1.6; }
   .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; color: var(--text-dark); }
   .feature-card p { font-size: 14px; color: var(--text-mid); line-height: 1.7; }
 
@@ -400,35 +404,35 @@
   <div class="features-grid">
     <div class="feature-card reveal">
       <div class="feature-icon">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       </div>
       <h3>스마트 일정 관리</h3>
       <p>장학금·졸업 서류 등 모든 마감일을 자동 추적하고 캘린더에 등록합니다.</p>
     </div>
     <div class="feature-card reveal" style="transition-delay:.06s">
       <div class="feature-icon">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c1.5 0 3 1.5 3 3a3 3 0 0 1 0 6c0 1.5-1.5 3-3 3a4 4 0 0 1-8 0c-1.5 0-3-1.5-3-3a3 3 0 0 1 0-6c0-1.5 1.5-3 3-3a4 4 0 0 1 4-4z"/><path d="M12 8v8M9 12h6"/></svg>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c1.5 0 3 1.5 3 3a3 3 0 0 1 0 6c0 1.5-1.5 3-3 3a4 4 0 0 1-8 0c-1.5 0-3-1.5-3-3a3 3 0 0 1 0-6c0-1.5 1.5-3 3-3a4 4 0 0 1 4-4z"/><path d="M12 8v8M9 12h6"/></svg>
       </div>
       <h3>AI 문서 분석</h3>
       <p>제출 서류를 AI가 분석해 마감일과 부족한 서류를 미리 알려드립니다.</p>
     </div>
     <div class="feature-card reveal" style="transition-delay:.12s">
       <div class="feature-icon">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       </div>
       <h3>준비 체크리스트</h3>
       <p>절차별 체크리스트와 진행률로 빠뜨린 서류가 없는지 확인합니다.</p>
     </div>
     <div class="feature-card reveal" style="transition-delay:.18s">
       <div class="feature-icon">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
       </div>
       <h3>마감 알림</h3>
       <p>D-7·D-3·D-1 리마인더로 중요한 날짜를 놓치지 않게 챙겨드립니다.</p>
     </div>
     <div class="feature-card reveal" style="transition-delay:.24s">
       <div class="feature-icon">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       </div>
       <h3>안전한 저장</h3>
       <p>모든 서류와 정보는 암호화되어 안전하게 보관됩니다.</p>
