@@ -87,7 +87,7 @@ export default function UploadPage({ onNavTo }) {
               // 전부 실패 → 토큰 만료로 간주하고 파일 처리 시점에서만 정리(lazy).
               // 만료(401) 외 사유(400/429 등)와 구별 불가하나, 오탐은 드물고 재연결로 복구 가능.
               clearCalendarToken();
-              setCalMsg({ text: 'Google 연결이 만료됐어요. 설정에서 다시 연결해주세요.', tone: 'info' });
+              setCalMsg({ text: '캘린더 연결이 만료됐어요. 내 정보 > 연결된 서비스에서 다시 연결해 주세요.', tone: 'info' });
             } else {
               setCalMsg(
                 cal.success

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Upload, Folder, Calendar, ListCheck, CheckCircle, User, ChevronDown } from '../icons';
+import { Home, Upload, Folder, Calendar, ListCheck, CheckCircle, ChevronDown } from '../icons';
 
 const SUB_ITEMS = [
   ['sub-schedule', Calendar, '일정 관리'],
@@ -50,7 +50,6 @@ export default function Sidebar({ currentSub, onNavTo, sidebarOpen }) {
           ))}
         </div>
       )}
-      <NavItem id="sub-profile" icon={User} label="내 정보" />
     </aside>
   );
 }

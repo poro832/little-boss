@@ -28,6 +28,12 @@ export function saveSession({ user_id, email, name }) {
   write('user_name', name || '');
 }
 
+// 프로필 저장 성공 후 로컬 캐시 갱신 (키 이름은 이 파일 밖으로 노출하지 않는다)
+export function updateLocalProfile({ name, affiliation } = {}) {
+  if (name !== undefined) write('user_name', name);
+  if (affiliation !== undefined) write('user_affiliation', affiliation);
+}
+
 export function clearSession() {
   ['user_id', 'user_email', 'user_name', 'user_affiliation', 'user_token',
    'dismissed_notifs', 'profileImage'].forEach(drop);
