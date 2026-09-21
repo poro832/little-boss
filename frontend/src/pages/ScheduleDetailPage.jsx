@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useDocuments } from '../lib/useDocuments';
 import { useIsMobile } from '../lib/useIsMobile';
 import { formatDeadlineWithLabel, deadlineTone } from '../lib/format';
-import { updateChecklistItem, pollUntilDone } from '../lib/api';
+import { updateChecklistItem, pollUntilDone, toScreenDoc } from '../lib/api';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Chip from '../components/Chip';
@@ -71,12 +71,19 @@ export default function ScheduleDetailPage({ day, title, prevSub, onNavTo, toast
   const handleReanalyze = async () => {
     setReanalyzing(true);
     try {
-      await pollUntilDone(docId);
+      const fresh = await pollUntilDone(docId);
+      const freshScreenDoc = toScreenDoc(fresh);
       setCheckState({});
       await reload?.();
-      toast('다시 분석했어요');
+      // pollUntilDone은 기존 분석 결과를 다시 읽어올 뿐, 재분석을 트리거하지 않는다.
+      // 그 사이 분석이 끝나 있었다면 성공, 여전히 실패 상태면 그대로 알린다 — 거짓 성공 토스트 금지.
+      if (freshScreenDoc.extractionFailed) {
+        toast('서류 목록을 다시 불러왔지만 여전히 추출하지 못했어요. 문서를 다시 올려보세요.');
+      } else {
+        toast('다시 분석했어요');
+      }
     } catch (e) {
-      toast('다시 분석 실패: ' + (e.response?.data?.message || e.message));
+      toast('다시 불러오기 실패: ' + (e.response?.data?.message || e.message));
     } finally {
       setReanalyzing(false);
     }
@@ -128,8 +135,8 @@ export default function ScheduleDetailPage({ day, title, prevSub, onNavTo, toast
               <EmptyState
                 icon={FileText}
                 title="서류 목록을 추출하지 못했어요"
-                desc="문서가 스캔본이거나 형식이 특이할 때 발생합니다. 다시 분석해 보세요."
-                actionLabel={reanalyzing ? '다시 분석 중...' : '다시 분석하기'}
+                desc="문서가 스캔본이거나 형식이 특이할 때 발생합니다. 다시 불러오면 그 사이 분석이 끝났는지 확인할 수 있어요."
+                actionLabel={reanalyzing ? '다시 불러오는 중...' : '다시 불러오기'}
                 onAction={reanalyzing ? undefined : handleReanalyze}
               />
             ) : (
