@@ -550,3 +550,17 @@
 .doc-progress-incomplete { color: var(--danger); font-weight: 600; }
 
 .doc-complete-btn { margin-top: var(--space-4); width: 100%; }
+
+/* ── 문서·일정 상세 ── */
+.detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); flex-wrap: wrap; }
+.detail-meta { font-size: 13px; color: var(--text-subtle); margin-top: 4px; }
+.detail-dday { margin-bottom: var(--space-5); }
+
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); margin-bottom: var(--space-5); align-items: start; }
+.detail-grid-mobile { grid-template-columns: 1fr; }
+
+.detail-summary-text { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+
+.detail-memo-actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+
+.memo-textarea { width: 100%; min-height: 120px; resize: vertical; font-family: inherit; }

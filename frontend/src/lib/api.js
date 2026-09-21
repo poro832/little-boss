@@ -1,6 +1,6 @@
 // LittleBoss 백엔드 API 클라이언트
 import axios from "axios";
-import { deadlineInfo, formatDeadline } from "./format";
+import { deadlineInfo } from "./format";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -91,10 +91,11 @@ export async function pollUntilDone(docId, { interval = 3000, maxTries = 100, on
 export function toScreenDoc(doc) {
   const a = doc.analysis || {};
   const firstDeadline = (a.deadlines && a.deadlines[0]) || null;
-  const reqDocs = a.required_documents || [];
+  const reqDocs = a.required_documents;
+  const reqDocsArr = Array.isArray(reqDocs) ? reqDocs : [];
   const checklist =
     (doc.checklist && doc.checklist.length ? doc.checklist : null) ||
-    reqDocs.map((d) => ({ name: d.name, completed: !!d.have }));
+    reqDocsArr.map((d) => ({ name: d.name, completed: !!d.have }));
   return {
     doc_id: doc.doc_id,
     title: a.document_type || doc.filename || "문서",
@@ -110,6 +111,7 @@ export function toScreenDoc(doc) {
     calendar_events: a.calendar_events || [],
     checks: checklist.map((c) => ({ l: c.name, done: !!c.completed })),
     total: checklist.length,
+    extractionFailed: !Array.isArray(reqDocs),
   };
 }
 
