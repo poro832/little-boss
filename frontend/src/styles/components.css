@@ -507,3 +507,46 @@
 .sched-list-date-passed .sched-list-date-day { color: var(--text-subtle); }
 .sched-list-body { flex: 1; min-width: 0; }
 .sched-list-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+
+/* ── 진행 중·완료된 문서 ── */
+.doc-head { margin-bottom: var(--space-5); }
+.doc-error { color: var(--danger); }
+
+.doc-list { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.doc-card { cursor: pointer; }
+.doc-card-done { cursor: default; opacity: .85; }
+
+.doc-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.doc-card-info { flex: 1; min-width: 0; }
+.doc-card-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.doc-card-sub { margin-bottom: var(--space-3); }
+.doc-card-actions { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
+.doc-card-chevron { color: var(--text-subtle); flex-shrink: 0; }
+
+.icon-btn {
+  background: none; border: none; cursor: pointer; padding: 6px; border-radius: var(--radius-xs);
+  color: var(--text-subtle); display: flex; align-items: center; justify-content: center;
+}
+.icon-btn:hover:not(:disabled) { background: var(--danger-soft); color: var(--danger); }
+.icon-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.analyzing {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: var(--space-3); padding: 10px 14px;
+  background: var(--brand-soft); color: var(--brand);
+  border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 600;
+}
+
+.doc-card-checks { display: flex; flex-direction: column; gap: 7px; margin-top: var(--space-3); margin-bottom: var(--space-4); }
+.doc-check-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
+.doc-check-row input { width: 15px; height: 15px; accent-color: var(--brand); cursor: pointer; flex-shrink: 0; }
+.doc-check-row-static { cursor: default; }
+.doc-check-row-static input { cursor: not-allowed; opacity: .7; }
+.doc-check-done { text-decoration: line-through; opacity: .55; }
+
+.doc-card-progress-meta { display: flex; justify-content: space-between; margin-top: 5px; }
+.doc-progress-count { color: var(--brand); font-weight: 600; }
+.doc-progress-incomplete { color: var(--danger); font-weight: 600; }
+
+.doc-complete-btn { margin-top: var(--space-4); width: 100%; }
