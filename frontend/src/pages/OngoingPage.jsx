@@ -46,12 +46,12 @@ export default function OngoingPage({ onNavTo, toast }) {
     setDeletingId(id);
     try {
       await deleteDocument(id);
-      setDeleteTarget(null);
       reload?.();
     } catch (err) {
       toast('삭제 실패: ' + (err.response?.data?.message || err.message));
     } finally {
       setDeletingId(null);
+      setDeleteTarget(null);
     }
   };
 
