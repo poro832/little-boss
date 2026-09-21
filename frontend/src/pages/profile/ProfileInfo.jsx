@@ -66,18 +66,55 @@ export default function ProfileInfo({ toast }) {
     }
   };
 
+  // 원본을 그대로 localStorage에 넣으면 폰 사진 한 장(4MB -> base64 5.3MB)으로
+  // 원본 용량 한도(~5MB)를 넘겨, 이후 메모/알림 설정 저장까지 조용히 실패한다.
+  // 저장 전에 정사각형으로 잘라 AVATAR_PX로 줄인다.
+  const AVATAR_PX = 256;
+
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file || !['image/png', 'image/jpeg'].includes(file.type)) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const result = ev.target?.result;
-      setProfileImage(result);
-      try { localStorage.setItem('profileImage', result); } catch { /* 차단 환경 */ }
-      window.dispatchEvent(new CustomEvent('profileImageUpdated', { detail: result }));
+      const src = ev.target?.result;
+      if (!src) return;
+      const img = new Image();
+      img.onload = () => {
+        const side = Math.min(img.width, img.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = AVATAR_PX;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(
+          img,
+          (img.width - side) / 2, (img.height - side) / 2, side, side,
+          0, 0, AVATAR_PX, AVATAR_PX
+        );
+        let result;
+        try {
+          result = canvas.toDataURL('image/jpeg', 0.85);
+        } catch {
+          return toast('사진을 불러오지 못했어요');
+        }
+        applyImage(result);
+      };
+      img.onerror = () => toast('사진을 불러오지 못했어요');
+      img.src = src;
     };
+    reader.onerror = () => toast('사진을 불러오지 못했어요');
     reader.readAsDataURL(file);
+  };
+
+  const applyImage = (result) => {
+    setProfileImage(result);
+    try {
+      localStorage.setItem('profileImage', result);
+    } catch {
+      // 저장 공간이 막혔거나 가득 찬 경우. 화면에는 남지만 새로고침하면
+      // 사라지므로 조용히 넘기지 않고 알린다.
+      toast('사진을 저장하지 못했어요. 새로고침하면 사라집니다');
+    }
+    window.dispatchEvent(new CustomEvent('profileImageUpdated', { detail: result }));
   };
 
   const handleImageRemove = () => {

@@ -66,7 +66,7 @@ export default function Header({ onLogout, onNavTo, sidebarOpen, setSidebarOpen 
 
   // 가장 임박한 마감(안 지난 것 중 D-day 최소) — 헤더 칩에 표시
   const upcoming = deadlineEvents(notifDocs.filter((d) => d.status === 'done'))
-    .filter((e) => e.date && !dday(e.date).isPast)
+    .filter((e) => e.date && dday(e.date).valid && !dday(e.date).isPast)
     .map((e) => ({ d: { title: e.title, navTitle: e.navTitle, deadlineDate: e.date }, dd: dday(e.date) }))
     .sort((a, b) => a.dd.days - b.dd.days)[0] || null;
 

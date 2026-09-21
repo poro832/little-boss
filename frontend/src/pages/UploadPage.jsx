@@ -15,7 +15,7 @@ function FileRow({ file, onNavTo }) {
   return (
     <button
       type="button"
-      className={`upload-file-row${clickable ? '' : ' upload-file-row-dim'}`}
+      className="upload-file-row"
       onClick={() => clickable && onNavTo('schedule-detail', file.scheduleTitle)}
       disabled={!clickable}
     >
@@ -154,7 +154,7 @@ export default function UploadPage({ onNavTo }) {
       </div>
 
       <div className="upload-grid">
-        <div className="upload-left">
+        <div>
           <div
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
@@ -211,7 +211,7 @@ export default function UploadPage({ onNavTo }) {
             )}
             {errMsg && <div className="upload-banner upload-banner-error">{errMsg}</div>}
             {analysis && (
-              <div className="card upload-analysis">
+              <div className="card">
                 <div className="upload-analysis-kicker">{analysis.document_type || '분석 결과'}</div>
                 <div className="upload-analysis-title">{analysis.filename}</div>
                 <div className="upload-analysis-summary">{analysis.summary}</div>

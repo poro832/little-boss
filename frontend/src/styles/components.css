@@ -19,7 +19,7 @@
 .btn-ghost:hover:not(:disabled) { background: var(--brand-soft); color: var(--brand); }
 
 /* 되돌릴 수 없는 동작 전용. 브랜드색을 쓰지 않는다. */
-.btn-danger { background: var(--danger); color: var(--text-on-brand); }
+.btn-danger { background: var(--danger-fill); color: var(--text-on-brand); }
 .btn-danger:hover:not(:disabled) { filter: brightness(.92); transform: translateY(-1px); }
 
 /* ── 카드 ── */

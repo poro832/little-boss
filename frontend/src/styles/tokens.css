@@ -28,6 +28,9 @@
      밝아지지만, 흰 글자를 얹는 채움 색은 두 테마에서 같은 값을 유지해야
      4.5:1을 지킨다. 테마 블록에서 재정의하지 않는다. */
   --brand-fill: #6B4FE8;
+  /* 흰 글자를 얹는 위험 동작 버튼 전용. --danger는 다크에서 #FF6B6B로
+     밝아져 흰 글자가 2.78까지 떨어진다. --brand-fill과 같은 이유로 테마 불변. */
+  --danger-fill: #C53030;
   /* hover는 테마별로 방향이 반대다. 라이트 페이지에선 더 어둡게,
      다크 페이지에선 더 밝게 가야 흰 글자(4.5:1)와 배경 대비(3:1)를
      동시에 지킨다. --brand-strong은 다크에서 밝아지므로 쓸 수 없다. */
@@ -75,7 +78,7 @@
     --border-strong: #3A3154;
     --brand: #8B72F0;
     --brand-strong: #A692F5;
-    --brand-soft: #241D3B;
+    --brand-soft: #211A37;
   --brand-fill-hover: #7357EA;
     --danger: #FF6B6B;   --danger-soft: #2E1A1A;
     --success: #4ADE80;  --success-soft: #16281C;
@@ -102,7 +105,7 @@
   --border-strong: #3A3154;
   --brand: #8B72F0;
   --brand-strong: #A692F5;
-  --brand-soft: #241D3B;
+  --brand-soft: #211A37;
   --brand-fill-hover: #7357EA;
   --danger: #FF6B6B;   --danger-soft: #2E1A1A;
   --success: #4ADE80;  --success-soft: #16281C;
