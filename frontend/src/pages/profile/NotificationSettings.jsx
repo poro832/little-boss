@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { getUser } from '../../lib/auth';
 import { updateNotifSettings } from '../../lib/api';
-import { pushSupport, enablePush, disablePush } from '../../lib/push';
+import { pushSupport, enablePush, disablePush, sendDemoNotification } from '../../lib/push';
 import Card from '../../components/Card';
+import Button from '../../components/Button';
 import Toggle from '../../components/Toggle';
 
 // LittleBoss.jsx:1929, 1931-2383 이관 (알림 토글 5종).
@@ -39,6 +40,7 @@ export default function NotificationSettings({ toast }) {
   const [notif, setNotif] = useState(readNotif);
   const [support, setSupport] = useState({ supported: true, needsInstall: false, permission: 'default' });
   const [busy, setBusy] = useState(false);
+  const [demoBusy, setDemoBusy] = useState(false);
 
   useEffect(() => { setSupport(pushSupport()); }, []);
 
@@ -71,6 +73,17 @@ export default function NotificationSettings({ toast }) {
     await persist({ ...notif, [key]: turningOn });
   };
 
+  const sendDemo = async () => {
+    setDemoBusy(true);
+    try {
+      const r = await sendDemoNotification();
+      setSupport(pushSupport());
+      if (!r.ok) toast(FAIL_MESSAGE[r.reason] || '알림을 보내지 못했어요.');
+    } finally {
+      setDemoBusy(false);
+    }
+  };
+
   const renderRow = ([label, sub, key]) => (
     <div key={key} className="notif-row">
       <div>
@@ -98,6 +111,14 @@ export default function NotificationSettings({ toast }) {
       <Card title="푸시 알림" className="profile-section">
         {blocker && <div className="notif-blocker t-caption">{blocker}</div>}
         {PUSH_ITEMS.map(renderRow)}
+        <div className="notif-demo">
+          <div className="t-caption notif-demo-desc">
+            알림이 어떻게 오는지 지금 바로 확인해 볼 수 있어요.
+          </div>
+          <Button variant="outline" size="sm" onClick={sendDemo} disabled={demoBusy}>
+            {demoBusy ? '보내는 중...' : '테스트 알림 보내기'}
+          </Button>
+        </div>
       </Card>
       <Card title="메일 알림" className="profile-section">
         {MAIL_ITEMS.map(renderRow)}

@@ -1,5 +1,6 @@
 import Header from './Header';
 import Sidebar from './Sidebar';
+import BottomTabs from './BottomTabs';
 import { useIsMobile } from '../lib/useIsMobile';
 
 export default function AppShell({ sub, onNavTo, sidebarOpen, setSidebarOpen, onLogout, children }) {
@@ -21,6 +22,7 @@ export default function AppShell({ sub, onNavTo, sidebarOpen, setSidebarOpen, on
           {children}
         </main>
       </div>
+      {isMobile && <BottomTabs currentSub={sub} onNavTo={onNavTo} />}
     </div>
   );
 }

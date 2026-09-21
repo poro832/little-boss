@@ -99,6 +99,34 @@ export async function disablePush(userId) {
   }
 }
 
+/** 발표·확인용 로컬 알림. 서버 없이 서비스워커가 직접 띄운다.
+ *
+ * 실제 마감 푸시와 같은 모양·같은 클릭 동작이라, 백엔드를 배포하기 전에도
+ * "알림이 이렇게 온다"를 그대로 보여줄 수 있다. 다른 점은 서버가 아니라
+ * 이 기기에서 만들어진다는 것뿐이다.
+ */
+export async function sendDemoNotification() {
+  const s = pushSupport();
+  if (s.needsInstall) return { ok: false, reason: 'needs-install' };
+  if (!s.supported) return { ok: false, reason: 'unsupported' };
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return { ok: false, reason: 'denied' };
+
+  const base = import.meta.env.BASE_URL || '/';
+  const reg = await getRegistration();
+  await reg.showNotification('D-3 · 국가장학금 신청서', {
+    body: '서류 제출 마감이 3일 남았습니다. 준비물 2건이 남아 있어요.',
+    icon: `${base}icon-192.png`,
+    badge: `${base}icon-192.png`,
+    lang: 'ko',
+    tag: 'lb-demo',
+    renotify: true,
+    data: { url: `${base}app.html?page=app&sub=sub-schedule` },
+  });
+  return { ok: true };
+}
+
 // ── 오프라인 마감 요약 ────────────────────────────────────
 // 서비스워커는 localStorage를 읽지 못하지만, 앱 골격이 캐시돼 있으면
 // 앱 JS가 떠서 이 값을 읽어준다. IndexedDB까지 갈 필요가 없다.

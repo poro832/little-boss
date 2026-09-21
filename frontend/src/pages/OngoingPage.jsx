@@ -3,6 +3,7 @@ import { useDocuments } from '../lib/useDocuments';
 import { formatDeadline, deadlineTone } from '../lib/format';
 import { deleteDocument, updateChecklistItem, setDocumentCompleted } from '../lib/api';
 import Card from '../components/Card';
+import DocSegment from '../components/DocSegment';
 import Button from '../components/Button';
 import Chip from '../components/Chip';
 import ProgressBar from '../components/ProgressBar';
@@ -78,6 +79,7 @@ export default function OngoingPage({ onNavTo, toast }) {
 
   return (
     <div>
+      <DocSegment current="sub-ongoing" onNavTo={onNavTo} />
       <div className="doc-head">
         <div className="t-body">준비 중인 서류를 체크리스트로 관리하세요.</div>
       </div>

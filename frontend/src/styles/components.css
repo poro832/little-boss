@@ -137,9 +137,43 @@
 .app-main { flex: 1; padding: var(--space-6); transition: padding-left .35s var(--ease); min-width: 0; }
 .app-main-pushed { padding-left: calc(200px + var(--space-6)); }
 .sidebar-scrim { position: fixed; top: 58px; inset-inline: 0; bottom: 0; background: var(--scrim); z-index: 40; }
+/* ── 하단 탭바 (모바일) ── */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  display: none; align-items: stretch;
+  background: var(--surface); border-top: 1px solid var(--border);
+  /* 홈 인디케이터(아이폰)에 가리지 않도록 안전영역만큼 더 띄운다 */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.tabbar-item {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  background: none; border: none; cursor: pointer;
+  padding: 8px 2px 7px; color: var(--text-subtle);
+  transition: color .15s var(--ease);
+}
+.tabbar-item-on { color: var(--brand); }
+.tabbar-label { font-size: 11px; font-weight: 600; letter-spacing: -.01em; }
+.tabbar-item-on .tabbar-label { font-weight: 700; }
+
+/* ── 세그먼트 (모바일 문서 전환) ── */
+.seg {
+  display: flex; gap: 4px; padding: 4px; margin-bottom: var(--space-4);
+  background: var(--surface-sunken); border-radius: var(--radius-pill);
+}
+.seg-item {
+  flex: 1; padding: 8px 12px; border: none; border-radius: var(--radius-pill);
+  background: none; color: var(--text-muted); font-size: 13px; font-weight: 600;
+  font-family: inherit; cursor: pointer; transition: background .15s var(--ease), color .15s var(--ease);
+}
+.seg-item-on { background: var(--surface); color: var(--brand); box-shadow: var(--shadow-card); }
+
 @media (max-width: 768px) {
   .app-main { padding: var(--space-4); }
   .app-main-pushed { padding-left: var(--space-4); }
+  .tabbar { display: flex; }
+  /* 탭바가 콘텐츠 마지막 줄을 덮지 않게 바닥을 비워둔다 */
+  .app-body { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ── 헤더 ── */
@@ -617,6 +651,8 @@
 .theme-opt:hover { border-color: var(--brand); color: var(--brand); }
 .theme-opt-on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand-strong); }
 
+.notif-demo { padding-top: var(--space-4); }
+.notif-demo-desc { margin-bottom: 10px; }
 .notif-blocker {
   background: var(--warning-soft); color: var(--warning);
   border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: var(--space-3);
@@ -637,3 +673,13 @@
 .connection-status-off .connection-status-label { color: var(--text-muted); font-weight: 700; }
 .connection-status-label { margin-bottom: 2px; }
 .profile-connection-desc { margin-bottom: var(--space-4); }
+
+/* ── 모바일 셸 마무리 ──
+   이 블록은 파일 끝에 있어야 한다. 위쪽 미디어 쿼리에 뒀더니 뒤에 오는
+   .header-burger / .profile-name 규칙에 덮여 아무 효과가 없었다. */
+@media (max-width: 768px) {
+  /* 하단 탭이 이동을 전부 담당하므로 서랍 메뉴와 이름표는 자리만 차지한다 */
+  .header-burger { display: none; }
+  .profile-name, .profile-caret { display: none; }
+  .empty { padding: var(--space-5) var(--space-4); }
+}

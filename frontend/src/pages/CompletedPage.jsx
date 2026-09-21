@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDocuments } from '../lib/useDocuments';
 import { deleteDocument, setDocumentCompleted } from '../lib/api';
 import Card from '../components/Card';
+import DocSegment from '../components/DocSegment';
 import Button from '../components/Button';
 import Chip from '../components/Chip';
 import ProgressBar from '../components/ProgressBar';
@@ -56,6 +57,7 @@ export default function CompletedPage({ onNavTo, toast }) {
 
   return (
     <div>
+      <DocSegment current="sub-completed" onNavTo={onNavTo} />
       <div className="doc-head">
         <div className="t-body">완료 처리한 문서 목록입니다.</div>
       </div>
