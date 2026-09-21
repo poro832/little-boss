@@ -149,7 +149,6 @@ export default function UploadPage({ onNavTo }) {
   return (
     <div>
       <div className="upload-head">
-        <div className="t-title">문서 업로드</div>
         <div className="t-body">분석할 문서를 업로드하면 AI가 서류·마감일을 자동 추출합니다.</div>
       </div>
 

@@ -79,7 +79,6 @@ export default function OngoingPage({ onNavTo, toast }) {
   return (
     <div>
       <div className="doc-head">
-        <div className="t-title">진행 중인 문서</div>
         <div className="t-body">준비 중인 서류를 체크리스트로 관리하세요.</div>
       </div>
 
@@ -109,7 +108,13 @@ export default function OngoingPage({ onNavTo, toast }) {
             <Card key={doc.doc_id} className="doc-card" onClick={() => onNavTo('schedule-detail', doc.title)}>
               <div className="doc-card-head">
                 <div className="doc-card-info">
-                  <div className="doc-card-title">{doc.title}</div>
+                  <button
+                    type="button"
+                    className="doc-card-title"
+                    onClick={(e) => { e.stopPropagation(); onNavTo('schedule-detail', doc.title); }}
+                  >
+                    {doc.title}
+                  </button>
                   <div className="t-caption">업로드 {doc.upload} · {processing ? '분석 중' : '분석 완료'}</div>
                 </div>
                 <div className="doc-card-actions">

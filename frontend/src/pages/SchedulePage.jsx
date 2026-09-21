@@ -64,7 +64,6 @@ export default function SchedulePage({ onNavTo }) {
     <div>
       <div className="sched-head">
         <div>
-          <div className="t-title">일정 관리</div>
           <div className="t-body">문서별 마감일을 한눈에 확인하세요.</div>
         </div>
         <Button variant="primary" icon={Calendar}>캘린더 동기화</Button>
@@ -94,7 +93,16 @@ export default function SchedulePage({ onNavTo }) {
               <div
                 key={i}
                 title={ev ? ev.title : ''}
+                role={ev ? 'button' : undefined}
+                tabIndex={ev ? 0 : undefined}
+                aria-label={ev ? `${d}일 ${ev.title}` : undefined}
                 onClick={() => ev && onNavTo('schedule-detail', ev.navTitle)}
+                onKeyDown={(e) => {
+                  if (ev && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onNavTo('schedule-detail', ev.navTitle);
+                  }
+                }}
                 className={`sched-cell${isMobile ? ' sched-cell-compact' : ''}${ev ? ' sched-cell-has-event' : ''}`}
                 style={{ background: bg, color, fontWeight: ev || today ? 700 : 400 }}
               >

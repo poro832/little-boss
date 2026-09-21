@@ -101,7 +101,9 @@
   animation: lbspin .7s linear infinite; display: inline-block; }
 
 /* ── 페이지 타이틀 ── */
-.page-title { font-size: 22px; font-weight: 800; letter-spacing: -.01em; margin-bottom: var(--space-5); }
+/* 페이지 제목은 셸(App.jsx)에서만 그린다. 각 페이지의 머리말 블록은 부제만
+   담으므로, 제목 아래 여백을 좁혀 부제가 제목에 붙게 한다. */
+.page-title { font-size: 22px; font-weight: 800; letter-spacing: -.01em; margin-bottom: var(--space-2); }
 
 /* ── 사이드바 ── */
 .sidebar {
@@ -202,7 +204,6 @@
   background: none; border: none; cursor: pointer; color: var(--text-subtle);
   font-size: 15px; line-height: 1; padding: 0 2px; flex-shrink: 0;
 }
-.notif-empty { padding: 20px; text-align: center; color: var(--text-subtle); font-size: 12px; }
 .profile-trigger {
   display: flex; align-items: center; gap: 8px; cursor: pointer;
   padding: 4px 10px 4px 4px; border-radius: var(--radius-sm); background: none; border: none;
@@ -522,7 +523,13 @@
 
 .doc-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
 .doc-card-info { flex: 1; min-width: 0; }
-.doc-card-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+/* 실제 <button>이다. 카드 전체가 클릭 가능하지만 div여서 키보드로 닿지 않으므로,
+   제목이 키보드 진입점 역할을 한다. 버튼 기본 스타일은 지운다. */
+.doc-card-title {
+  display: block; font-size: 16px; font-weight: 700; margin-bottom: 4px;
+  background: none; border: none; padding: 0; margin-left: 0; margin-right: 0;
+  color: inherit; font-family: inherit; text-align: left; cursor: pointer;
+}
 .doc-card-sub { margin-bottom: var(--space-3); }
 .doc-card-actions { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
 .doc-card-chevron { color: var(--text-subtle); flex-shrink: 0; }

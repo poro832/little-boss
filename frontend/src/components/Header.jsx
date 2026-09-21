@@ -107,8 +107,13 @@ export default function Header({ onLogout, onNavTo, sidebarOpen, setSidebarOpen 
 
   useEffect(() => {
     const h = () => { setProfileOpen(false); setNotifOpen(false); };
+    const esc = (e) => { if (e.key === 'Escape') h(); };
+    document.addEventListener('keydown', esc);
     document.addEventListener('click', h);
-    return () => document.removeEventListener('click', h);
+    return () => {
+      document.removeEventListener('click', h);
+      document.removeEventListener('keydown', esc);
+    };
   }, []);
 
   return (
@@ -141,6 +146,8 @@ export default function Header({ onLogout, onNavTo, sidebarOpen, setSidebarOpen 
           <button
             className="header-icon-btn"
             aria-label="알림"
+            aria-haspopup="menu"
+            aria-expanded={notifOpen}
             onClick={(e) => { e.stopPropagation(); setNotifOpen(!notifOpen); setProfileOpen(false); }}
           >
             <Bell size={17} />
@@ -149,8 +156,7 @@ export default function Header({ onLogout, onNavTo, sidebarOpen, setSidebarOpen 
           {notifOpen && (
             <div className="notif-dropdown">
               <div className="notif-dropdown-head">알림</div>
-              {notifications.length > 0 ? (
-                notifications.map((notif) => {
+              {notifications.map((notif) => {
                   const handleNotifClick = () => {
                     setNotifOpen(false);
                     if (notif.kind === 'deadline') {
@@ -180,16 +186,16 @@ export default function Header({ onLogout, onNavTo, sidebarOpen, setSidebarOpen 
                       )}
                     </div>
                   );
-                })
-              ) : (
-                <div className="notif-empty">알림이 없습니다</div>
-              )}
+              })}
             </div>
           )}
         </div>
         <div className="header-dropdown-anchor">
           <button
             className="profile-trigger"
+            aria-label="내 계정 메뉴"
+            aria-haspopup="menu"
+            aria-expanded={profileOpen}
             onClick={(e) => { e.stopPropagation(); setProfileOpen((p) => !p); setNotifOpen(false); }}
           >
             <span className="profile-avatar">

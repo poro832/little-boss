@@ -57,7 +57,6 @@ export default function CompletedPage({ onNavTo, toast }) {
   return (
     <div>
       <div className="doc-head">
-        <div className="t-title">완료된 문서</div>
         <div className="t-body">완료 처리한 문서 목록입니다.</div>
       </div>
 

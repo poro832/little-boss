@@ -211,11 +211,12 @@ export default function ProfileInfo({ toast }) {
       )}
 
       <Card title="화면 설정" className="profile-section">
-        <div className="theme-row">
+        <div className="theme-row" role="group" aria-label="화면 테마">
           {THEME_OPTIONS.map(([v, label]) => (
             <button
               key={v}
               type="button"
+              aria-pressed={theme === v}
               className={`theme-opt ${theme === v ? 'theme-opt-on' : ''}`}
               onClick={() => setTheme(v)}
             >

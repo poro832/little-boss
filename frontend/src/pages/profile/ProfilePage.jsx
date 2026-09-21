@@ -17,7 +17,6 @@ export default function ProfilePage({ toast, onLogout }) {
   return (
     <div>
       <div className="doc-head">
-        <div className="t-title">내 정보</div>
         <div className="t-body">계정 정보와 알림 설정을 관리하세요.</div>
       </div>
 
@@ -25,9 +24,12 @@ export default function ProfilePage({ toast, onLogout }) {
         {TABS.map(([id, label]) => (
           <button
             key={id}
+            id={`tab-${id}`}
             type="button"
             role="tab"
             aria-selected={tab === id}
+            aria-controls={`panel-${id}`}
+            tabIndex={tab === id ? 0 : -1}
             className={`profile-tab ${tab === id ? 'profile-tab-active' : ''}`}
             onClick={() => setTab(id)}
           >
@@ -36,9 +38,13 @@ export default function ProfilePage({ toast, onLogout }) {
         ))}
       </div>
 
-      {tab === 'profile' && <ProfileInfo toast={toast} />}
-      {tab === 'notifications' && <NotificationSettings toast={toast} />}
-      {tab === 'connections' && <Connections toast={toast} onLogout={onLogout} />}
+      {/* role="tablist"를 선언했으면 패널도 tabpanel로 연결해야 보조기술이
+          탭과 내용을 짝지을 수 있다. */}
+      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} tabIndex={0}>
+        {tab === 'profile' && <ProfileInfo toast={toast} />}
+        {tab === 'notifications' && <NotificationSettings toast={toast} />}
+        {tab === 'connections' && <Connections toast={toast} onLogout={onLogout} />}
+      </div>
     </div>
   );
 }
