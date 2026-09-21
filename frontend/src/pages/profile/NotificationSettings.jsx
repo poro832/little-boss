@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getUser } from '../../lib/auth';
 import { updateNotifSettings } from '../../lib/api';
+import { pushSupport, enablePush, disablePush } from '../../lib/push';
 import Card from '../../components/Card';
 import Toggle from '../../components/Toggle';
 
@@ -25,15 +26,49 @@ const MAIL_ITEMS = [
   ['주간 요약 메일', '매주 월요일 이번 주 마감 일정 요약', 'weekly'],
 ];
 
+// 켜기 실패 이유별 안내. 사용자가 다음에 뭘 해야 하는지까지 말해준다.
+const FAIL_MESSAGE = {
+  'needs-install': 'iPhone은 홈 화면에 추가한 뒤에야 알림을 받을 수 있어요. 공유 > 홈 화면에 추가 후 다시 켜주세요.',
+  denied: '브라우저에서 알림이 차단되어 있어요. 주소창 옆 자물쇠 > 알림에서 허용으로 바꿔주세요.',
+  unsupported: '이 브라우저는 알림을 지원하지 않아요. 아래 메일 알림을 대신 켜두세요.',
+  'no-key': '알림 설정이 아직 준비되지 않았어요. 잠시 후 다시 시도해 주세요.',
+};
+
 export default function NotificationSettings({ toast }) {
   const user = getUser();
   const [notif, setNotif] = useState(readNotif);
+  const [support, setSupport] = useState({ supported: true, needsInstall: false, permission: 'default' });
+  const [busy, setBusy] = useState(false);
 
-  const toggleNotif = async (key) => {
-    const next = { ...notif, [key]: !notif[key] };
+  useEffect(() => { setSupport(pushSupport()); }, []);
+
+  const persist = async (next) => {
     setNotif(next);
     try { localStorage.setItem('notif_settings', JSON.stringify(next)); } catch { /* 차단 환경 */ }
     try { await updateNotifSettings(user.id, next); } catch { /* 로컬엔 저장됨 — 무음 처리 */ }
+  };
+
+  const toggleNotif = async (key) => {
+    const turningOn = !notif[key];
+
+    // 마감 알림만 실제 푸시 구독과 연결된다. 권한 요청은 이 사용자 동작이 유일한 트리거다.
+    if (key === 'deadline') {
+      setBusy(true);
+      try {
+        const r = turningOn ? await enablePush(user.id) : await disablePush(user.id);
+        if (!r.ok) {
+          // 켜기에 실패했으면 토글을 되돌린다 — 켜진 것처럼 보이는데 안 오는 게 최악이다.
+          setSupport(pushSupport());
+          toast(FAIL_MESSAGE[r.reason] || '알림을 켜지 못했어요.');
+          return;
+        }
+        setSupport(pushSupport());
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    await persist({ ...notif, [key]: turningOn });
   };
 
   const renderRow = ([label, sub, key]) => (
@@ -42,13 +77,26 @@ export default function NotificationSettings({ toast }) {
         <div className="t-body notif-row-label">{label}</div>
         <div className="t-caption">{sub}</div>
       </div>
-      <Toggle checked={notif[key]} onChange={() => toggleNotif(key)} label={label} />
+      <Toggle
+        checked={notif[key]}
+        onChange={() => toggleNotif(key)}
+        label={label}
+        disabled={key === 'deadline' && busy}
+      />
     </div>
   );
+
+  // 켤 수 없는 상태라면 토글을 누르기 전에 미리 알려준다.
+  const blocker =
+    support.needsInstall ? FAIL_MESSAGE['needs-install']
+      : !support.supported ? FAIL_MESSAGE.unsupported
+        : support.permission === 'denied' ? FAIL_MESSAGE.denied
+          : null;
 
   return (
     <div className="profile-panel">
       <Card title="푸시 알림" className="profile-section">
+        {blocker && <div className="notif-blocker t-caption">{blocker}</div>}
         {PUSH_ITEMS.map(renderRow)}
       </Card>
       <Card title="메일 알림" className="profile-section">

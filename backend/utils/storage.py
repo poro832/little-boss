@@ -121,6 +121,69 @@ def save_user(data: dict):
     table.put_item(Item=data)
 
 
+def update_user_attrs(user_id: str, attrs: dict):
+    """사용자 레코드의 일부 속성만 갱신한다.
+
+    save_user()는 put_item이라 레코드를 통째로 덮어쓴다. 마감 스캔이 last_notified를
+    쓰는 동안 사용자가 프로필을 저장하면 한쪽이 사라지므로, 푸시 관련 쓰기는
+    update_item으로 해당 속성만 건드린다.
+    """
+    if not user_id or not attrs:
+        return
+    if ENV == "local":
+        path = LOCAL_DB_PATH / "_users.json"
+        users = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        users.setdefault(user_id, {"user_id": user_id}).update(attrs)
+        path.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+        return
+
+    import boto3
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table(os.getenv('USERS_TABLE', 'sgu-pj-03-users'))
+    # 속성명이 예약어와 겹칠 수 있어 전부 플레이스홀더로 치환한다.
+    names = {f"#k{i}": k for i, k in enumerate(attrs)}
+    values = {f":v{i}": v for i, v in enumerate(attrs.values())}
+    expr = "SET " + ", ".join(f"#k{i} = :v{i}" for i in range(len(attrs)))
+    table.update_item(
+        Key={'user_id': user_id},
+        UpdateExpression=expr,
+        ExpressionAttributeNames=names,
+        ExpressionAttributeValues=values,
+    )
+
+
+def scan_users(filter_attr: str = None) -> list:
+    """전체 사용자 목록. filter_attr가 주어지면 그 속성이 있는 사용자만.
+
+    한계: 테이블 전체 Scan이다. 졸작 규모(수십~수백 명)에서는 문제없지만
+    수천 명이 되면 GSI나 별도 구독 테이블로 옮겨야 한다.
+    """
+    if ENV == "local":
+        path = LOCAL_DB_PATH / "_users.json"
+        if not path.exists():
+            return []
+        users = list(json.loads(path.read_text(encoding="utf-8")).values())
+        return [u for u in users if not filter_attr or u.get(filter_attr)]
+
+    import boto3
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table(os.getenv('USERS_TABLE', 'sgu-pj-03-users'))
+    kwargs = {}
+    if filter_attr:
+        kwargs = {
+            'FilterExpression': 'attribute_exists(#a)',
+            'ExpressionAttributeNames': {'#a': filter_attr},
+        }
+    out, resp = [], None
+    while True:
+        if resp and resp.get('LastEvaluatedKey'):
+            kwargs['ExclusiveStartKey'] = resp['LastEvaluatedKey']
+        resp = table.scan(**kwargs)
+        out.extend(resp.get('Items', []))
+        if not resp.get('LastEvaluatedKey'):
+            return out
+
+
 def delete_user(user_id: str) -> bool:
     """사용자 레코드 삭제 (회원 탈퇴)."""
     if ENV == "local":

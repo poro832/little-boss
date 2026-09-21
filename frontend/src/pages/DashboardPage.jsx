@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useDocuments } from '../lib/useDocuments';
 import { deadlineInfo, formatDeadline, formatDeadlineWithLabel, deadlineTone, greeting } from '../lib/format';
 import { getUser } from '../lib/auth';
+import { cacheDeadlineSummary, readDeadlineSummary } from '../lib/push';
 import Card from '../components/Card';
 import Chip from '../components/Chip';
 import Button from '../components/Button';
@@ -12,6 +13,11 @@ import { Calendar, ChevronRight, CheckCircle, FileText, Search } from '../icons'
 
 const STATUS_TONE = { '완료': 'success', '진행 중': 'warning', '미완료': 'danger' };
 const STATUS_OPTIONS = ['진행 중', '완료', '미완료'];
+
+// 마감이 남아 있고 아직 끝내지 않은 문서. 히어로·다음마감·오프라인 요약이 같은 기준을 쓴다.
+const isUpcoming = (d) =>
+  d.status === 'done' && d.deadlineDate && !deadlineInfo(d.deadlineDate).isPast && !d.completed;
+const daysLeft = (d) => deadlineInfo(d.deadlineDate).days ?? 99999;
 
 // 문서 표시 상태: 완료 처리됐거나 체크리스트를 다 채웠으면 완료, 마감이 지났으면 미완료, 그 외엔 진행 중
 function docDisplayStatus(d) {
@@ -24,7 +30,7 @@ function docDisplayStatus(d) {
 }
 
 export default function DashboardPage({ onNavTo }) {
-  const { docs, loading } = useDocuments();
+  const { docs, loading, error } = useDocuments();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -37,21 +43,55 @@ export default function DashboardPage({ onNavTo }) {
     return () => document.removeEventListener('click', h);
   }, [filterOpen]);
 
+  // 조회에 성공할 때마다 마감 요약을 남겨둔다. 오프라인에서 앱을 열면 이걸 보여준다.
+  useEffect(() => {
+    if (loading || error) return;
+    cacheDeadlineSummary(
+      docs.filter(isUpcoming).sort((a, b) => daysLeft(a) - daysLeft(b))
+        .map((d) => ({ title: d.title, date: d.deadlineDate, doc_id: d.doc_id }))
+    );
+  }, [docs, loading, error]);
+
   // 초기 로딩 중에는 카드가 빈 채로 깜빡이지 않도록 스켈레톤 표시
   if (loading) return <Skeleton rows={3} />;
 
+  // 네트워크가 끊겨 아무것도 못 받았으면 마지막으로 저장한 요약을 보여준다.
+  if (error && docs.length === 0) {
+    const cached = readDeadlineSummary();
+    if (cached.items.length > 0) {
+      return (
+        <div>
+          <div className="dash-greeting">{greeting()}, {getUser().name}님</div>
+          <Card title="오프라인 · 마지막으로 저장된 마감" className="offline-card">
+            <div className="t-caption offline-synced">
+              {new Date(cached.syncedAt).toLocaleString('ko-KR')} 기준 · 이후 변경은 반영되지 않았습니다
+            </div>
+            {cached.items.map((it) => (
+              <div key={it.doc_id || it.title} className="offline-row">
+                <span className="t-body">{it.title}</span>
+                <Chip tone={deadlineTone(it.date) === 'urgent' ? 'danger' : 'brand'}>
+                  {formatDeadline(it.date)}
+                </Chip>
+              </div>
+            ))}
+          </Card>
+        </div>
+      );
+    }
+  }
+
   // 마감 임박 문서: 마감 안 지난 것 중 D-day 가장 가까운 1개
   const hero = docs
-    .filter((d) => d.status === 'done' && d.deadlineDate && !deadlineInfo(d.deadlineDate).isPast && !d.completed)
-    .map((d) => ({ ...d, _days: deadlineInfo(d.deadlineDate).days ?? 99999 }))
+    .filter(isUpcoming)
+    .map((d) => ({ ...d, _days: daysLeft(d) }))
     .sort((a, b) => a._days - b._days)[0] || null;
   const doneCount = hero ? hero.checks.filter((c) => c.done).length : 0;
 
   // 다음 마감 3건: 히어로에 쓴 문서는 제외
   const upcoming = docs
-    .filter((d) => d.status === 'done' && d.deadlineDate && !deadlineInfo(d.deadlineDate).isPast && !d.completed)
+    .filter(isUpcoming)
     .filter((d) => !hero || d.doc_id !== hero.doc_id)
-    .sort((a, b) => deadlineInfo(a.deadlineDate).days - deadlineInfo(b.deadlineDate).days);
+    .sort((a, b) => daysLeft(a) - daysLeft(b));
 
   // 미완료 체크 항목을 문서 구분 없이 펼친다
   const todos = docs

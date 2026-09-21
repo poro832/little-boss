@@ -1,0 +1,16 @@
+{
+  "name": "LittleBoss — AI 행정 비서",
+  "short_name": "LittleBoss",
+  "description": "행정 서류의 마감일과 준비물을 자동으로 정리하고 제때 알려줍니다.",
+  "lang": "ko",
+  "start_url": "app.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#6B4FE8",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

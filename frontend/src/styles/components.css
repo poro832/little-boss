@@ -60,6 +60,7 @@
 .toggle { width: 44px; height: 24px; border-radius: var(--radius-pill); border: none;
   background: var(--border-strong); cursor: pointer; position: relative; transition: background .2s var(--ease); }
 .toggle[aria-checked="true"] { background: var(--brand); }
+.toggle:disabled { opacity: .5; cursor: not-allowed; }
 .toggle-knob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
   border-radius: 50%; background: var(--text-on-brand); transition: transform .2s var(--ease); }
 .toggle[aria-checked="true"] .toggle-knob { transform: translateX(20px); }
@@ -313,6 +314,13 @@
 
 /* ── 대시보드 ── */
 .dash-greeting { font-size: 19px; font-weight: 700; margin-bottom: var(--space-4); }
+
+/* 오프라인에서 마지막으로 저장한 마감 요약 */
+.offline-card { border: 1px dashed var(--border-strong); }
+.offline-synced { margin-bottom: var(--space-3); }
+.offline-row { display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-3); padding: 10px 0; border-bottom: 1px solid var(--border); }
+.offline-row:last-child { border-bottom: none; }
 
 .hero {
   background: var(--brand-gradient); color: var(--text-on-brand);
@@ -609,6 +617,11 @@
 .theme-opt:hover { border-color: var(--brand); color: var(--brand); }
 .theme-opt-on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand-strong); }
 
+.notif-blocker {
+  background: var(--warning-soft); color: var(--warning);
+  border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: var(--space-3);
+  line-height: 1.6;
+}
 .notif-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
 .notif-row:last-of-type { border-bottom: none; }
 .notif-row-label { font-weight: 600; color: var(--text); margin-bottom: 2px; }

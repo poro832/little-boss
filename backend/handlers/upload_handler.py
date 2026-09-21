@@ -25,6 +25,14 @@ CORS_HEADERS = {
 
 def handle(event, context=None):
     """Lambda 진입점 — API Gateway 경로/메서드에 따라 라우팅"""
+    # EventBridge Scheduler가 직접 호출하는 경로. API Gateway 이벤트가 아니라
+    # path/httpMethod가 없으므로 라우팅보다 먼저 확인해야 한다.
+    if event.get('task') == 'deadline-scan':
+        from utils.push import run_deadline_scan
+        stats = run_deadline_scan()
+        print(f"[deadline-scan] {stats}")
+        return stats
+
     path = event.get('path', '')
     method = event.get('httpMethod', 'GET')
     path_params = event.get('pathParameters') or {}
@@ -91,6 +99,19 @@ def handle(event, context=None):
         from handlers.auth_handler import delete_account
         user_id = (event.get('queryStringParameters') or {}).get('user_id') or _json_body(event).get('user_id')
         r = delete_account(user_id)
+        return _response(r.pop('code', 200 if r.get('success') else 400), r)
+
+    # ── 웹 푸시 구독 (마감 알림) ──
+    if method == 'POST' and path == '/push/subscribe':
+        from utils.push import add_subscription
+        b = _json_body(event)
+        r = add_subscription(b.get('user_id'), b.get('subscription'))
+        return _response(r.pop('code', 200 if r.get('success') else 400), r)
+
+    if method == 'DELETE' and path == '/push/subscribe':
+        from utils.push import remove_subscription
+        b = _json_body(event)
+        r = remove_subscription(b.get('user_id'), b.get('endpoint'))
         return _response(r.pop('code', 200 if r.get('success') else 400), r)
 
     # ── 비밀번호 찾기 (이메일 인증 코드) ──

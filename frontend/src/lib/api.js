@@ -63,6 +63,12 @@ export const updateNotifSettings = (userId, settings) =>
 export const deleteAccount = (userId) =>
   api.delete("/auth/account", { params: { user_id: userId } });
 
+// 웹 푸시 구독 (마감 알림)
+export const subscribePush = (userId, subscription) =>
+  api.post("/push/subscribe", { user_id: userId, subscription });
+export const unsubscribePush = (userId, endpoint) =>
+  api.delete("/push/subscribe", { data: { user_id: userId, endpoint } });
+
 // 비밀번호 찾기 (이메일 인증 코드)
 export const requestReset = (email) => api.post("/auth/reset/request", { email });
 export const verifyReset = (email, code) => api.post("/auth/reset/verify", { email, code });
