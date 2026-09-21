@@ -9,7 +9,7 @@
 
   --text: #1A1025;
   --text-muted: #5A4D7A;
-  --text-subtle: #9B90B8;
+  --text-subtle: #6F6490;
   --text-on-brand: #FFFFFF;
   --on-brand-faint: rgba(255, 255, 255, .06);
   --on-brand-soft:  rgba(255, 255, 255, .18);
@@ -36,9 +36,9 @@
      동시에 지킨다. --brand-strong은 다크에서 밝아지므로 쓸 수 없다. */
   --brand-fill-hover: #5038C4;
 
-  --danger: #E53E3E;   --danger-soft: #FFF0F0;
-  --success: #22C55E;  --success-soft: #F0FFF4;
-  --warning: #EA580C;  --warning-soft: #FFF7ED;
+  --danger: #C53030;   --danger-soft: #FFF0F0;
+  --success: #167C3C;  --success-soft: #F0FFF4;
+  --warning: #C2410C;  --warning-soft: #FFF7ED;
   --today: #0066CC;    --today-soft: #E0F2FE;
   --track: #EDE9FF;
   --scrim: rgba(0, 0, 0, .45);
