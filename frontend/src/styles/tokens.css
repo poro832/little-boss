@@ -24,6 +24,15 @@
   --brand-soft: #F0ECFF;
   --brand-gradient: linear-gradient(135deg, #8B72F0 0%, #6B4FE8 48%, #5038C4 100%);
 
+  /* 버튼 같은 단색 채움 전용. --brand는 다크에서 접근성 용도(테두리·아이콘)로
+     밝아지지만, 흰 글자를 얹는 채움 색은 두 테마에서 같은 값을 유지해야
+     4.5:1을 지킨다. 테마 블록에서 재정의하지 않는다. */
+  --brand-fill: #6B4FE8;
+  /* hover는 테마별로 방향이 반대다. 라이트 페이지에선 더 어둡게,
+     다크 페이지에선 더 밝게 가야 흰 글자(4.5:1)와 배경 대비(3:1)를
+     동시에 지킨다. --brand-strong은 다크에서 밝아지므로 쓸 수 없다. */
+  --brand-fill-hover: #5038C4;
+
   --danger: #E53E3E;   --danger-soft: #FFF0F0;
   --success: #22C55E;  --success-soft: #F0FFF4;
   --warning: #EA580C;  --warning-soft: #FFF7ED;
@@ -67,6 +76,7 @@
     --brand: #8B72F0;
     --brand-strong: #A692F5;
     --brand-soft: #241D3B;
+  --brand-fill-hover: #7357EA;
     --danger: #FF6B6B;   --danger-soft: #2E1A1A;
     --success: #4ADE80;  --success-soft: #16281C;
     --warning: #FB923C;  --warning-soft: #2C1D10;
@@ -93,6 +103,7 @@
   --brand: #8B72F0;
   --brand-strong: #A692F5;
   --brand-soft: #241D3B;
+  --brand-fill-hover: #7357EA;
   --danger: #FF6B6B;   --danger-soft: #2E1A1A;
   --success: #4ADE80;  --success-soft: #16281C;
   --warning: #FB923C;  --warning-soft: #2C1D10;
