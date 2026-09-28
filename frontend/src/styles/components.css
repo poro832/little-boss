@@ -682,4 +682,18 @@
   .header-burger { display: none; }
   .profile-name, .profile-caret { display: none; }
   .empty { padding: var(--space-5) var(--space-4); }
+
+  /* 터치 영역 확보 (권장 44x44).
+     아이콘·글자 크기는 그대로 두고 눌리는 범위만 넓힌다 — 보이는 크기를 키우면
+     레이아웃이 흐트러지고, 좁혀두면 오탭이 는다. */
+  .header-icon-btn,
+  .profile-trigger,
+  .header-brand,
+  .icon-btn { min-width: 44px; min-height: 44px; }
+
+  .btn-sm { padding: 12px 16px; font-size: 13px; min-height: 44px; }
+
+  /* 검색창은 실제 입력칸 높이가 19px였다. 칸 자체를 44px로 세운다. */
+  .dash-search { padding: 0 12px; min-height: 44px; }
+  .dash-search input { font-size: 14px; min-height: 44px; width: 100%; }
 }

@@ -1,24 +1,41 @@
 import { useState, useEffect } from 'react';
 import { useIsMobile } from '../lib/useIsMobile';
 import { formatDeadlineWithLabel, deadlineTone } from '../lib/format';
-import { updateChecklistItem, pollUntilDone, toScreenDoc } from '../lib/api';
+import { updateChecklistItem, pollUntilDone, toScreenDoc, getDocument } from '../lib/api';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Chip from '../components/Chip';
 import ProgressBar from '../components/ProgressBar';
 import EmptyState from '../components/EmptyState';
+import Skeleton from '../components/Skeleton';
 import { ArrowLeft, FileText, CheckCircle } from '../icons';
 
-export default function DocumentDetailPage({ data, prevSub, onNavTo, toast }) {
+export default function DocumentDetailPage({ data, docId, prevSub, onNavTo, toast }) {
   const isMobile = useIsMobile();
   const [screenDoc, setScreenDoc] = useState(data);
   const [checkState, setCheckState] = useState({}); // name -> bool (낙관적 오버라이드)
   const [reanalyzing, setReanalyzing] = useState(false);
   const [memo, setMemo] = useState('');
   const [savedAt, setSavedAt] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // 상세로 새로 진입하면(다른 문서로 이동) 최신 prop으로 동기화
   useEffect(() => { setScreenDoc(data); }, [data]);
+
+  // 주소로 바로 들어오거나 새로고침하면 객체 없이 id만 온다. 그때는 직접 불러온다.
+  useEffect(() => {
+    if (data || !docId) return;
+    let alive = true;
+    setLoading(true);
+    getDocument(docId)
+      .then((r) => {
+        const d = r?.data?.document;
+        if (alive && d) setScreenDoc(toScreenDoc(d));
+      })
+      .catch(() => { /* 아래 '문서를 찾을 수 없어요'로 떨어진다 */ })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [data, docId]);
 
   const doc = screenDoc;
   const memoKey = doc ? `docMemo_${doc.doc_id}` : null;
@@ -35,6 +52,7 @@ export default function DocumentDetailPage({ data, prevSub, onNavTo, toast }) {
     }
   }, [memoKey]);
 
+  if (loading) return <Skeleton rows={3} />;
   if (!doc) return <EmptyState icon={FileText} title="문서를 찾을 수 없어요" />;
 
   // 체크리스트는 백엔드(doc.checks)를 기준으로 표시, checkState로 낙관적 오버라이드

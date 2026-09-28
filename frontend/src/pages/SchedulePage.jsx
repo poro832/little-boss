@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useDocuments } from '../lib/useDocuments';
 import { useIsMobile } from '../lib/useIsMobile';
 import { deadlineInfo, formatDeadline, deadlineTone } from '../lib/format';
-import { deadlineEvents, deadlinesForMonth } from '../lib/api';
+import { deadlineEvents, deadlinesForMonth, registerCalendar } from '../lib/api';
+import { getCalendarToken, clearCalendarToken } from '../lib/auth';
+import ConfirmDialog from '../components/ConfirmDialog';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Chip from '../components/Chip';
@@ -20,14 +22,76 @@ const COLOR_MAP = { ongoing: 'var(--warning)', completed: 'var(--success)', inco
 // dday 칩 톤: deadlineTone() 결과 → Chip tone
 const DDAY_CHIP_TONE = { none: 'neutral', past: 'neutral', urgent: 'danger', normal: 'brand' };
 
-export default function SchedulePage({ onNavTo }) {
+// 이미 등록한 문서를 다시 보내면 캘린더에 같은 일정이 하나 더 생긴다.
+// 서버가 중복을 걸러주지 않으므로 등록한 문서를 기기에 기록해 두고 건너뛴다.
+const SYNCED_KEY = 'calendar_synced_docs';
+const readSynced = () => {
+  try { return new Set(JSON.parse(localStorage.getItem(SYNCED_KEY) || '[]')); }
+  catch { return new Set(); }
+};
+const writeSynced = (set) => {
+  try { localStorage.setItem(SYNCED_KEY, JSON.stringify([...set])); } catch { /* 차단 환경 */ }
+};
+
+export default function SchedulePage({ onNavTo, toast }) {
   const { docs, loading, error } = useDocuments();
+  const [syncing, setSyncing] = useState(false);
+  const [confirmSync, setConfirmSync] = useState(null);   // { targets: [...] }
   const isMobile = useIsMobile();
   const now = new Date();
   const [calY, setCalY] = useState(now.getFullYear());
   const [calM, setCalM] = useState(now.getMonth() + 1); // 1~12
   const prevMonth = () => { if (calM === 1) { setCalM(12); setCalY(calY - 1); } else setCalM(calM - 1); };
   const nextMonth = () => { if (calM === 12) { setCalM(1); setCalY(calY + 1); } else setCalM(calM + 1); };
+
+  // 아직 캘린더에 올리지 않은 문서만 모아 확인을 받고 등록한다.
+  const askSync = () => {
+    if (!getCalendarToken()) {
+      toast('내 정보 > 연결된 서비스에서 Google 캘린더를 먼저 연결해 주세요');
+      return;
+    }
+    const synced = readSynced();
+    const targets = docs.filter(
+      (d) => d.status === 'done' && d.deadlineDate && !synced.has(d.doc_id)
+    );
+    if (targets.length === 0) {
+      toast('새로 등록할 일정이 없어요');
+      return;
+    }
+    setConfirmSync({ targets });
+  };
+
+  const runSync = async () => {
+    const targets = confirmSync?.targets || [];
+    setSyncing(true);
+    const token = getCalendarToken();
+    const synced = readSynced();
+    let ok = 0;
+    let expired = false;
+    for (const d of targets) {
+      try {
+        const { data } = await registerCalendar(d.doc_id, token);
+        const results = data.created_events || [];
+        const allFailed = results.length > 0 && results.every((r) => r.status !== 'created');
+        if (allFailed) { expired = true; break; }
+        synced.add(d.doc_id);
+        ok += 1;
+      } catch {
+        // 개별 실패는 건너뛰고 나머지를 계속 시도한다
+      }
+    }
+    writeSynced(synced);
+    setSyncing(false);
+    setConfirmSync(null);
+    if (expired) {
+      clearCalendarToken();
+      toast('캘린더 연결이 만료됐어요. 내 정보 > 연결된 서비스에서 다시 연결해 주세요');
+    } else if (ok === 0) {
+      toast('등록에 실패했어요. 잠시 후 다시 시도해 주세요');
+    } else {
+      toast(`${ok}개 문서의 일정을 캘린더에 등록했어요`);
+    }
+  };
 
   // 동적 캘린더 그리드
   const firstDow = new Date(calY, calM - 1, 1).getDay();
@@ -66,7 +130,9 @@ export default function SchedulePage({ onNavTo }) {
         <div>
           <div className="t-body">문서별 마감일을 한눈에 확인하세요.</div>
         </div>
-        <Button variant="primary" icon={Calendar}>캘린더 동기화</Button>
+        <Button variant="primary" icon={Calendar} onClick={askSync} disabled={syncing}>
+          {syncing ? '동기화 중...' : '캘린더 동기화'}
+        </Button>
       </div>
 
       <Card className="sched-cal-card">
@@ -153,6 +219,17 @@ export default function SchedulePage({ onNavTo }) {
           </button>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmSync}
+        title="캘린더에 일정을 등록할까요?"
+        desc={`아직 등록하지 않은 문서 ${confirmSync ? confirmSync.targets.length : 0}건의 마감을 Google 캘린더에 추가합니다.`}
+        confirmLabel="등록"
+        tone="primary"
+        busy={syncing}
+        onConfirm={runSync}
+        onCancel={() => setConfirmSync(null)}
+      />
     </div>
   );
 }
