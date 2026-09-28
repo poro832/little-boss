@@ -16,7 +16,7 @@
 .btn-outline:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
 
 .btn-ghost { background: transparent; color: var(--text-muted); }
-.btn-ghost:hover:not(:disabled) { background: var(--brand-soft); color: var(--brand); }
+.btn-ghost:hover:not(:disabled) { background: var(--brand-soft); color: var(--brand-strong); }
 
 /* 되돌릴 수 없는 동작 전용. 브랜드색을 쓰지 않는다. */
 .btn-danger { background: var(--danger-fill); color: var(--text-on-brand); }
@@ -128,7 +128,7 @@
   font-size: 13px; font-weight: 500; color: var(--text-muted);
   cursor: pointer; text-align: left; transition: background .15s var(--ease), color .15s var(--ease);
 }
-.nav-item:hover { background: var(--brand-soft); color: var(--brand); }
+.nav-item:hover { background: var(--brand-soft); color: var(--brand-strong); }
 .nav-item-active { background: var(--brand-fill); color: var(--text-on-brand); font-weight: 600; }
 .nav-item-active:hover { background: var(--brand-fill); color: var(--text-on-brand); }
 .nav-item-parent { color: var(--brand); }
@@ -190,7 +190,7 @@
 }
 .header-burger {
   width: 36px; height: 36px; border-radius: var(--radius-sm); border: none;
-  background: var(--brand-soft); color: var(--brand); cursor: pointer;
+  background: var(--brand-soft); color: var(--brand-strong); cursor: pointer;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .header-brand {
@@ -212,7 +212,7 @@
 }
 .header-icon-btn {
   width: 36px; height: 36px; border-radius: var(--radius-sm); border: none;
-  background: var(--brand-soft); color: var(--brand); cursor: pointer; position: relative;
+  background: var(--brand-soft); color: var(--brand-strong); cursor: pointer; position: relative;
   display: flex; align-items: center; justify-content: center;
 }
 .header-icon-dot {
@@ -350,7 +350,7 @@
   display: flex; align-items: flex-start; gap: 8px;
   margin: var(--space-3) 0 var(--space-4);
   padding: 10px 12px; border-radius: var(--radius-sm);
-  background: var(--brand-soft); color: var(--brand);
+  background: var(--brand-soft); color: var(--brand-strong);
   font-size: 12px; line-height: 1.6;
 }
 
@@ -462,7 +462,7 @@
 .upload-queue-actions { display: flex; justify-content: flex-end; }
 
 .upload-banner { border-radius: var(--radius-sm); padding: 14px 16px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-.upload-banner-info { background: var(--brand-soft); color: var(--brand); }
+.upload-banner-info { background: var(--brand-soft); color: var(--brand-strong); }
 .upload-banner-error { background: var(--danger-soft); color: var(--danger); font-weight: 500; }
 
 .upload-analysis-kicker { font-size: 12px; font-weight: 700; color: var(--brand); margin-bottom: 4px; }
@@ -484,7 +484,7 @@
 
 .upload-cal-banner { border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
 .upload-cal-banner-success { background: var(--success-soft); color: var(--success); }
-.upload-cal-banner-info { background: var(--brand-soft); color: var(--brand); }
+.upload-cal-banner-info { background: var(--brand-soft); color: var(--brand-strong); }
 .upload-cal-btn { width: 100%; justify-content: center; }
 
 .upload-progress-dialog { max-height: 500px; overflow-y: auto; }
@@ -595,7 +595,7 @@
 .analyzing {
   display: flex; align-items: center; gap: 10px;
   margin-top: var(--space-3); padding: 10px 14px;
-  background: var(--brand-soft); color: var(--brand);
+  background: var(--brand-soft); color: var(--brand-strong);
   border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 600;
 }
 
@@ -700,7 +700,7 @@
 .onboard-icon {
   width: 68px; height: 68px; margin: 0 auto var(--space-4);
   display: flex; align-items: center; justify-content: center;
-  border-radius: 50%; background: var(--brand-soft); color: var(--brand);
+  border-radius: 50%; background: var(--brand-soft); color: var(--brand-strong);
 }
 .onboard-title { font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 12px; letter-spacing: -.01em; }
 .onboard-desc { font-size: 15px; line-height: 1.75; color: var(--text-muted); white-space: pre-line; margin-bottom: var(--space-5); }

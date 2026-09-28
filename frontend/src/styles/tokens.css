@@ -4,43 +4,49 @@
   color-scheme: light;
 
   --surface: #FFFFFF;
-  --surface-sunken: #F2F1F6;
+  --surface-sunken: #F5F8FB;
   --surface-raised: #FFFFFF;
 
-  --text: #1A1025;
-  --text-muted: #5A4D7A;
-  --text-subtle: #6F6490;
+  --text: #122033;
+  --text-muted: #526173;
+  /* 시안의 #8390A0은 흰 배경에서 3.25라 본문으로 못 쓴다. 색조는 유지하고 명도만 낮췄다. */
+  --text-subtle: #647182;
   --text-on-brand: #FFFFFF;
   --on-brand-faint: rgba(255, 255, 255, .06);
   --on-brand-soft:  rgba(255, 255, 255, .18);
   --on-brand-dim:   rgba(255, 255, 255, .80);
 
-  --border: #E8E4F4;
-  --border-strong: #D8D3E6;
+  --border: #DFE8EE;
+  --border-strong: #C9D8E3;
 
-  --brand: #6B4FE8;
-  --brand-strong: #5038C4;
-  --brand-light: #8B72F0;
-  --brand-soft: #F0ECFF;
-  --brand-gradient: linear-gradient(135deg, #8B72F0 0%, #6B4FE8 48%, #5038C4 100%);
+  --brand: #2079C9;
+  --brand-strong: #155792;
+  --brand-light: #8ECBED;
+  --brand-soft: #E7F3FB;
+  /* 시안 원본 그라디언트. 밝은 끝이 #2079C9라 흰 글자가 4.53으로 통과한다.
+     이보다 밝은 색을 시작점에 두면 히어로의 흰 글자가 4.5 아래로 떨어진다. */
+  --brand-gradient: linear-gradient(135deg, #2079C9 0%, #1B69B0 48%, #155792 100%);
 
   /* 버튼 같은 단색 채움 전용. --brand는 다크에서 접근성 용도(테두리·아이콘)로
      밝아지지만, 흰 글자를 얹는 채움 색은 두 테마에서 같은 값을 유지해야
      4.5:1을 지킨다. 테마 블록에서 재정의하지 않는다. */
-  --brand-fill: #6B4FE8;
-  /* 흰 글자를 얹는 위험 동작 버튼 전용. --danger는 다크에서 #FF6B6B로
-     밝아져 흰 글자가 2.78까지 떨어진다. --brand-fill과 같은 이유로 테마 불변. */
-  --danger-fill: #C53030;
-  /* hover는 테마별로 방향이 반대다. 라이트 페이지에선 더 어둡게,
-     다크 페이지에선 더 밝게 가야 흰 글자(4.5:1)와 배경 대비(3:1)를
-     동시에 지킨다. --brand-strong은 다크에서 밝아지므로 쓸 수 없다. */
-  --brand-fill-hover: #5038C4;
+  --brand-fill: #2079C9;
+  /* 흰 글자를 얹는 위험 동작 버튼 전용. --danger는 다크에서 밝아져
+     흰 글자가 무너지므로 --brand-fill과 같은 이유로 테마 불변. */
+  --danger-fill: #C23C1B;
+  /* hover는 테마별 값이 필요하다. 파랑은 보라와 달리 양쪽 다 '더 어둡게'가
+     맞는데, 다크에서는 페이지 대비 3:1을 지켜야 해서 라이트만큼 내릴 수 없다.
+     라이트 #155792(7.47/6.09) · 다크 #1C6EB8(5.29/3.10). */
+  --brand-fill-hover: #155792;
 
-  --danger: #C53030;   --danger-soft: #FFF0F0;
-  --success: #167C3C;  --success-soft: #F0FFF4;
-  --warning: #C2410C;  --warning-soft: #FFF7ED;
-  --today: #0066CC;    --today-soft: #E0F2FE;
-  --track: #EDE9FF;
+  /* 위험은 시안의 코랄 계열을 쓰되, 원본 #E76F51은 흰 배경에서 3.09라
+     명도를 낮춰 5.31로 맞췄다. 진행중(앰버)과 색상각을 23도 벌려 달력에서
+     '미완료'와 '진행중'이 구분되게 했다. */
+  --danger: #C23C1B;   --danger-soft: #FFF0EB;
+  --success: #147B68;  --success-soft: #E6F5F1;
+  --warning: #A16207;  --warning-soft: #FCF7E8;
+  --today: #1A66AB;    --today-soft: #E0EFFA;
+  --track: #E3EDF5;
   --scrim: rgba(0, 0, 0, .45);
 
   --radius-xs: 6px;
@@ -53,10 +59,10 @@
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
   --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
 
-  --shadow-card: 0 1px 8px rgba(107, 79, 232, .07);
-  --shadow-hover: 0 16px 44px rgba(107, 79, 232, .16);
-  --shadow-brand: 0 10px 28px rgba(107, 79, 232, .30);
-  --shadow-pop: 0 8px 32px rgba(26, 16, 37, .12);
+  --shadow-card: 0 1px 8px rgba(18, 32, 51, .07);
+  --shadow-hover: 0 16px 44px rgba(18, 32, 51, .14);
+  --shadow-brand: 0 10px 28px rgba(32, 121, 201, .28);
+  --shadow-pop: 0 8px 32px rgba(18, 32, 51, .12);
 
   --font-sans: 'Noto Sans KR', system-ui, -apple-system, sans-serif;
   --font-num: 'DM Sans', 'Noto Sans KR', system-ui, sans-serif;
@@ -68,23 +74,23 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --surface: #171325;
-    --surface-sunken: #100D1A;
-    --surface-raised: #1F1A30;
-    --text: #F3F0FA;
-    --text-muted: #B5AACB;
-    --text-subtle: #8E84A2;
-    --border: #2C2440;
-    --border-strong: #3A3154;
-    --brand: #8B72F0;
-    --brand-strong: #A692F5;
-    --brand-soft: #211A37;
-  --brand-fill-hover: #7357EA;
-    --danger: #FF6B6B;   --danger-soft: #2E1A1A;
-    --success: #4ADE80;  --success-soft: #16281C;
-    --warning: #FB923C;  --warning-soft: #2C1D10;
-    --today: #5AB0FF;    --today-soft: #12283A;
-    --track: #2A2340;
+    --surface: #122033;
+    --surface-sunken: #0C1826;
+    --surface-raised: #1A2C42;
+    --text: #EAF1F8;
+    --text-muted: #A9BACA;
+    --text-subtle: #8496A8;
+    --border: #2A3F58;
+    --border-strong: #3A5270;
+    --brand: #6FB9EC;
+    --brand-strong: #9ED0F3;
+    --brand-soft: #16293D;
+    --brand-fill-hover: #1C6EB8;
+    --danger: #F08A6E;   --danger-soft: #3A1F18;
+    --success: #4CC3A5;  --success-soft: #10302A;
+    --warning: #E0A356;  --warning-soft: #38260F;
+    --today: #6FB9EC;    --today-soft: #16293D;
+    --track: #1E3350;
     --scrim: rgba(0, 0, 0, .62);
     --shadow-card: 0 1px 8px rgba(0, 0, 0, .40);
     --shadow-hover: 0 16px 44px rgba(0, 0, 0, .55);
@@ -95,23 +101,23 @@
 /* 사용자가 명시적으로 다크를 고른 경우. 시스템이 라이트여도 이긴다. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --surface: #171325;
-  --surface-sunken: #100D1A;
-  --surface-raised: #1F1A30;
-  --text: #F3F0FA;
-  --text-muted: #B5AACB;
-  --text-subtle: #8E84A2;
-  --border: #2C2440;
-  --border-strong: #3A3154;
-  --brand: #8B72F0;
-  --brand-strong: #A692F5;
-  --brand-soft: #211A37;
-  --brand-fill-hover: #7357EA;
-  --danger: #FF6B6B;   --danger-soft: #2E1A1A;
-  --success: #4ADE80;  --success-soft: #16281C;
-  --warning: #FB923C;  --warning-soft: #2C1D10;
-  --today: #5AB0FF;    --today-soft: #12283A;
-  --track: #2A2340;
+  --surface: #122033;
+  --surface-sunken: #0C1826;
+  --surface-raised: #1A2C42;
+  --text: #EAF1F8;
+  --text-muted: #A9BACA;
+  --text-subtle: #8496A8;
+  --border: #2A3F58;
+  --border-strong: #3A5270;
+  --brand: #6FB9EC;
+  --brand-strong: #9ED0F3;
+  --brand-soft: #16293D;
+  --brand-fill-hover: #1C6EB8;
+  --danger: #F08A6E;   --danger-soft: #3A1F18;
+  --success: #4CC3A5;  --success-soft: #10302A;
+  --warning: #E0A356;  --warning-soft: #38260F;
+  --today: #6FB9EC;    --today-soft: #16293D;
+  --track: #1E3350;
   --scrim: rgba(0, 0, 0, .62);
   --shadow-card: 0 1px 8px rgba(0, 0, 0, .40);
   --shadow-hover: 0 16px 44px rgba(0, 0, 0, .55);
