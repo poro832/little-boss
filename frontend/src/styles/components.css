@@ -510,6 +510,7 @@
 .upload-file-row-name { font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
 
 /* ── 일정 관리 ── */
+.sched-sync { display: flex; align-items: center; gap: 2px; }
 .sched-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-5); gap: var(--space-3); flex-wrap: wrap; }
 
 .sched-cal-card { margin-bottom: var(--space-5); }
@@ -660,6 +661,7 @@
 .theme-opt-on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand-strong); }
 
 .notif-demo { padding-top: var(--space-4); }
+.help-row-desc { margin-bottom: 12px; }
 .notif-demo-desc { margin-bottom: 10px; }
 .notif-blocker {
   background: var(--warning-soft); color: var(--warning);
@@ -681,6 +683,50 @@
 .connection-status-off .connection-status-label { color: var(--text-muted); font-weight: 700; }
 .connection-status-label { margin-bottom: 2px; }
 .profile-connection-desc { margin-bottom: var(--space-4); }
+
+/* ── 첫 실행 안내 ── */
+.onboard {
+  position: relative; width: min(460px, calc(100vw - 32px));
+  background: var(--surface-raised); border-radius: var(--radius-lg);
+  padding: 40px 32px 28px; box-shadow: var(--shadow-pop); text-align: center;
+}
+.onboard-skip {
+  position: absolute; top: 12px; right: 12px;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: var(--radius-sm);
+  color: var(--text-subtle); cursor: pointer;
+}
+.onboard-skip:hover { background: var(--surface-sunken); color: var(--text); }
+.onboard-icon {
+  width: 68px; height: 68px; margin: 0 auto var(--space-4);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--brand-soft); color: var(--brand);
+}
+.onboard-title { font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 12px; letter-spacing: -.01em; }
+.onboard-desc { font-size: 15px; line-height: 1.75; color: var(--text-muted); white-space: pre-line; margin-bottom: var(--space-5); }
+.onboard-dots { display: flex; gap: 7px; justify-content: center; margin-bottom: var(--space-5); }
+.onboard-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); transition: all .2s var(--ease); }
+.onboard-dot-on { width: 20px; border-radius: 4px; background: var(--brand); }
+.onboard-actions { display: flex; gap: 10px; justify-content: center; }
+.onboard-step-text { margin-top: 14px; font-size: 12px; font-weight: 600; color: var(--text-subtle); font-family: var(--font-num); }
+
+/* ── 도움말 툴팁 ── */
+.helptip { position: relative; display: inline-flex; vertical-align: middle; margin-left: 6px; }
+.helptip-btn {
+  width: 18px; height: 18px; padding: 0; border-radius: 50%;
+  border: 1.5px solid var(--border-strong); background: none;
+  color: var(--text-subtle); font-size: 11px; font-weight: 800; line-height: 1;
+  font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.helptip-btn:hover, .helptip-btn[aria-expanded="true"] { border-color: var(--brand); color: var(--brand); }
+.helptip-pop {
+  position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%);
+  z-index: 300; width: 250px; padding: 12px 14px;
+  background: var(--surface-raised); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-pop);
+  font-size: 13px; font-weight: 400; line-height: 1.6; color: var(--text-muted);
+  text-align: left; white-space: pre-line;
+}
 
 /* ── 모바일 셸 마무리 ──
    이 블록은 파일 끝에 있어야 한다. 위쪽 미디어 쿼리에 뒀더니 뒤에 오는
@@ -704,4 +750,10 @@
   /* 검색창은 실제 입력칸 높이가 19px였다. 칸 자체를 44px로 세운다. */
   .dash-search { padding: 0 12px; min-height: 44px; }
   .dash-search input { font-size: 14px; min-height: 44px; width: 100%; }
+}
+
+@media (max-width: 480px) {
+  /* 좁은 화면에서 툴팁이 오른쪽으로 넘치지 않게 왼쪽으로 붙인다 */
+  .helptip-pop { left: auto; right: -8px; transform: none; width: min(250px, calc(100vw - 48px)); }
+  .onboard { padding: 36px 22px 24px; }
 }

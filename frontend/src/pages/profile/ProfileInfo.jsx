@@ -3,6 +3,7 @@ import { getUser, isEmailUser, updateLocalProfile } from '../../lib/auth';
 import { updateProfile, changePassword } from '../../lib/api';
 import { useTheme } from '../../lib/useTheme';
 import Card from '../../components/Card';
+import { resetOnboarding } from '../../lib/onboarding';
 import Field from '../../components/Field';
 import Button from '../../components/Button';
 
@@ -18,7 +19,7 @@ const THEME_OPTIONS = [
   ['dark', '다크'],
 ];
 
-export default function ProfileInfo({ toast }) {
+export default function ProfileInfo({ toast, onNavTo }) {
   const user = getUser();
   const emailUser = isEmailUser();
   const { theme, setTheme } = useTheme();
@@ -115,6 +116,12 @@ export default function ProfileInfo({ toast }) {
       toast('사진을 저장하지 못했어요. 새로고침하면 사라집니다');
     }
     window.dispatchEvent(new CustomEvent('profileImageUpdated', { detail: result }));
+  };
+
+  // 안내 플래그를 지우고 대시보드로 보낸다. 거기서 다시 뜬다.
+  const showGuide = () => {
+    resetOnboarding();
+    onNavTo('sub-home');
   };
 
   const handleImageRemove = () => {
@@ -224,6 +231,14 @@ export default function ProfileInfo({ toast }) {
             </button>
           ))}
         </div>
+      </Card>
+
+      <Card title="도움말" className="profile-section">
+        <div className="t-body notif-row-label">앱 사용법</div>
+        <div className="t-caption help-row-desc">
+          업로드부터 알림까지 3단계 안내를 다시 볼 수 있어요.
+        </div>
+        <Button variant="outline" size="sm" onClick={showGuide}>앱 사용법 다시 보기</Button>
       </Card>
     </div>
   );

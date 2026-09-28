@@ -5,6 +5,7 @@ import { pushSupport, enablePush, disablePush, sendDemoNotification } from '../.
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Toggle from '../../components/Toggle';
+import HelpTip from '../../components/HelpTip';
 
 // LittleBoss.jsx:1929, 1931-2383 이관 (알림 토글 5종).
 const DEFAULT_NOTIF = { deadline: true, incomplete: true, analysis: true, mail: true, weekly: false };
@@ -17,7 +18,10 @@ const readNotif = () => {
 };
 
 const PUSH_ITEMS = [
-  ['마감 임박 알림', '마감 7일·3일·1일 전 알림', 'deadline'],
+  ['마감 임박 알림', '마감 7일·3일·1일 전 알림', 'deadline',
+   `켜면 브라우저에 알림 권한을 요청합니다. 허용하면 앱을 열어두지 않아도 알림이 옵니다.
+
+iPhone은 홈 화면에 추가한 뒤에만 동작합니다.`],
   ['서류 미완료 리마인더', '미준비 서류가 있을 때 알림', 'incomplete'],
   ['문서 분석 완료 알림', '업로드 문서 분석이 끝나면 알림', 'analysis'],
 ];
@@ -84,10 +88,13 @@ export default function NotificationSettings({ toast }) {
     }
   };
 
-  const renderRow = ([label, sub, key]) => (
+  const renderRow = ([label, sub, key, tip]) => (
     <div key={key} className="notif-row">
       <div>
-        <div className="t-body notif-row-label">{label}</div>
+        <div className="t-body notif-row-label">
+          {label}
+          {tip && <HelpTip label={label} text={tip} />}
+        </div>
         <div className="t-caption">{sub}</div>
       </div>
       <Toggle

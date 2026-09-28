@@ -3,6 +3,8 @@ import { useDocuments } from '../lib/useDocuments';
 import { deadlineInfo, formatDeadline, formatDeadlineWithLabel, deadlineTone, greeting } from '../lib/format';
 import { getUser } from '../lib/auth';
 import { cacheDeadlineSummary, readDeadlineSummary } from '../lib/push';
+import { shouldShowOnboarding } from '../lib/onboarding';
+import Onboarding from '../components/Onboarding';
 import Card from '../components/Card';
 import Chip from '../components/Chip';
 import Button from '../components/Button';
@@ -34,6 +36,8 @@ export default function DashboardPage({ onNavTo }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  // 처음 연 사용자에게만 1회. 판단은 lib/onboarding 이 한다.
+  const [showOnboard, setShowOnboard] = useState(() => shouldShowOnboarding());
 
   // 필터 팝오버 바깥 클릭 시 닫기
   useEffect(() => {
@@ -111,6 +115,11 @@ export default function DashboardPage({ onNavTo }) {
 
   return (
     <div>
+      <Onboarding
+        open={showOnboard}
+        onClose={() => setShowOnboard(false)}
+        onGoUpload={() => onNavTo('sub-upload')}
+      />
       <div className="dash-greeting">{greeting()}, {getUser().name}님</div>
 
       {hero ? (

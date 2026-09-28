@@ -5,6 +5,7 @@ import { deadlineInfo, formatDeadline, deadlineTone } from '../lib/format';
 import { deadlineEvents, deadlinesForMonth, registerCalendar } from '../lib/api';
 import { getCalendarToken, clearCalendarToken } from '../lib/auth';
 import ConfirmDialog from '../components/ConfirmDialog';
+import HelpTip from '../components/HelpTip';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Chip from '../components/Chip';
@@ -130,9 +131,14 @@ export default function SchedulePage({ onNavTo, toast }) {
         <div>
           <div className="t-body">문서별 마감일을 한눈에 확인하세요.</div>
         </div>
-        <Button variant="primary" icon={Calendar} onClick={askSync} disabled={syncing}>
-          {syncing ? '동기화 중...' : '캘린더 동기화'}
-        </Button>
+        <div className="sched-sync">
+          <Button variant="primary" icon={Calendar} onClick={askSync} disabled={syncing}>
+            {syncing ? '동기화 중...' : '캘린더 동기화'}
+          </Button>
+          <HelpTip label="캘린더 동기화" text={`아직 Google 캘린더에 올리지 않은 문서의 마감을 한 번에 등록합니다.
+
+이미 등록한 문서는 건너뛰므로 여러 번 눌러도 일정이 중복되지 않습니다.`} />
+        </div>
       </div>
 
       <Card className="sched-cal-card">

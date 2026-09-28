@@ -120,7 +120,7 @@ export default function App() {
     'sub-schedule': <SchedulePage onNavTo={navTo} toast={toast} />,
     'sub-ongoing': <OngoingPage onNavTo={navTo} toast={toast} />,
     'sub-completed': <CompletedPage onNavTo={navTo} toast={toast} />,
-    'sub-profile': <ProfilePage toast={toast} onLogout={handleLogout} />,
+    'sub-profile': <ProfilePage toast={toast} onLogout={handleLogout} onNavTo={navTo} />,
     'schedule-detail': <ScheduleDetailPage day={detailDay} title={detailTitle} prevSub={prevSub} onNavTo={navTo} toast={toast} />,
     'doc-detail': <DocumentDetailPage data={docData} docId={docId} prevSub={prevSub} onNavTo={navTo} toast={toast} />,
   };

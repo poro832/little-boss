@@ -11,7 +11,7 @@ const TABS = [
   ['connections', '연결된 서비스'],
 ];
 
-export default function ProfilePage({ toast, onLogout }) {
+export default function ProfilePage({ toast, onLogout, onNavTo }) {
   const [tab, setTab] = useState('profile');
 
   return (
@@ -41,7 +41,7 @@ export default function ProfilePage({ toast, onLogout }) {
       {/* role="tablist"를 선언했으면 패널도 tabpanel로 연결해야 보조기술이
           탭과 내용을 짝지을 수 있다. */}
       <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} tabIndex={0}>
-        {tab === 'profile' && <ProfileInfo toast={toast} />}
+        {tab === 'profile' && <ProfileInfo toast={toast} onNavTo={onNavTo} />}
         {tab === 'notifications' && <NotificationSettings toast={toast} />}
         {tab === 'connections' && <Connections toast={toast} onLogout={onLogout} />}
       </div>

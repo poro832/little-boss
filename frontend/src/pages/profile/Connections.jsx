@@ -3,6 +3,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { getUser, getCalendarToken, saveCalendarToken, clearCalendarToken, clearSession } from '../../lib/auth';
 import { deleteAccount } from '../../lib/api';
 import Card from '../../components/Card';
+import HelpTip from '../../components/HelpTip';
 import Button from '../../components/Button';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { Calendar } from '../../icons';
@@ -59,7 +60,12 @@ export default function Connections({ toast, onLogout }) {
 
   return (
     <div className="profile-panel">
-      <Card title="Google 캘린더 연동" className="profile-section">
+      <Card
+        title={<>Google 캘린더 연동<HelpTip label="Google 캘린더 연동" text={`연결하면 문서에서 뽑아낸 마감일이 내 Google 캘린더에 일정으로 등록됩니다.
+
+연결은 언제든 해제할 수 있고, 해제해도 이미 등록된 일정은 남습니다.`} /></>}
+        className="profile-section"
+      >
         {connected ? (
           <div className="connection-status connection-status-on">
             <Calendar size={20} />
