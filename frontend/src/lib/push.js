@@ -64,11 +64,13 @@ export async function enablePush(userId) {
   if (s.needsInstall) return { ok: false, reason: 'needs-install' };
   if (!s.supported) return { ok: false, reason: 'unsupported' };
 
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return { ok: false, reason: 'denied' };
-
+  // 키 확인이 권한 요청보다 먼저다. 순서가 반대면 사용자가 허용을 누른 뒤에야
+  // "아직 준비되지 않았어요"를 보게 된다 — 물어놓고 무르는 꼴이다.
   const key = import.meta.env.VITE_VAPID_PUBLIC_KEY;
   if (!key) return { ok: false, reason: 'no-key' };
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return { ok: false, reason: 'denied' };
 
   const reg = await getRegistration();
   let sub = await reg.pushManager.getSubscription();

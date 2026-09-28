@@ -32,7 +32,7 @@ const FAIL_MESSAGE = {
   'needs-install': 'iPhone은 홈 화면에 추가한 뒤에야 알림을 받을 수 있어요. 공유 > 홈 화면에 추가 후 다시 켜주세요.',
   denied: '브라우저에서 알림이 차단되어 있어요. 주소창 옆 자물쇠 > 알림에서 허용으로 바꿔주세요.',
   unsupported: '이 브라우저는 알림을 지원하지 않아요. 아래 메일 알림을 대신 켜두세요.',
-  'no-key': '알림 설정이 아직 준비되지 않았어요. 잠시 후 다시 시도해 주세요.',
+  'no-key': '마감 알림 서버는 준비 중이에요. 아래 "테스트 알림 보내기"로 알림이 어떻게 오는지 먼저 확인해 보세요.',
 };
 
 export default function NotificationSettings({ toast }) {
