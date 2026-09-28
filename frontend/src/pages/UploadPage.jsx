@@ -163,7 +163,7 @@ export default function UploadPage({ onNavTo }) {
             <div className="upload-dropzone-icon"><Upload size={40} /></div>
             <div className="upload-dropzone-title">여기에 파일을 드래그 &amp; 드롭하세요</div>
             <div className="upload-dropzone-desc">
-              또는 아래 버튼으로 파일을 선택하세요<br />PDF · DOCX · HWPX · 이미지 · TXT 지원 · 최대 20MB
+              또는 아래 버튼으로 파일을 선택하세요<br />PDF · DOCX · HWPX · 이미지 · TXT 지원 · 최대 50MB
             </div>
             <div className="upload-dropzone-actions">
               <Button variant="primary" icon={Upload} onClick={() => fileInputRef.current?.click()}>
