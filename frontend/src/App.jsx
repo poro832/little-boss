@@ -128,7 +128,9 @@ export default function App() {
   return (
     <>
       <AppShell sub={sub} onNavTo={navTo} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} onLogout={handleLogout}>
-        <h1 className="page-title">{TITLES[sub]}</h1>
+        {/* 대시보드는 인사말이 시각적 제목 역할을 한다. 제목을 두 번 쌓지 않되
+            페이지당 h1 하나는 유지해야 하므로 화면에서만 감춘다. */}
+        <h1 className={`page-title ${sub === 'sub-home' ? 'sr-only' : ''}`}>{TITLES[sub]}</h1>
         {PAGES[sub]}
       </AppShell>
       <Toast msg={msg} show={show} />
